@@ -10,27 +10,27 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { formatPHP } from "@/lib/utils";
 import { Plus, Pencil } from "lucide-react";
-
-const CATEGORIES = [
-  "Venue", "Catering", "Photography", "Videography", "Flowers",
-  "Attire", "Beauty", "Sounds & Lights", "Cake", "Transportation",
-  "Invitations", "Other",
-];
+import { type VendorCategory, CATEGORY_LABELS, CATEGORY_ORDER } from "@/lib/categories";
+import { cn } from "@/lib/utils";
 
 type BudgetItem = {
   id: string;
-  category: string;
+  category: string | null;
+  vendor_id: string | null;
   label: string;
   estimated_amount: string;
   paid_amount: string;
   notes: string | null;
 };
 
+type VendorRef = { id: string; name: string; categories: VendorCategory[] };
+
 type Wedding = { id: string; budget_total: string | null };
 
 export default function BudgetPage() {
   const [wedding, setWedding] = useState<Wedding | null>(null);
   const [items, setItems] = useState<BudgetItem[]>([]);
+  const [vendors, setVendors] = useState<VendorRef[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Budget total modal
@@ -41,7 +41,7 @@ export default function BudgetPage() {
   // Add/edit expense modal
   const [expenseOpen, setExpenseOpen] = useState(false);
   const [editing, setEditing] = useState<BudgetItem | null>(null);
-  const [form, setForm] = useState({ label: "", category: "Venue", estimated: "", paid: "", notes: "" });
+  const [form, setForm] = useState({ label: "", category: "Venue", vendor_id: null as string | null, estimated: "", paid: "", notes: "" });
   const [savingExpense, setSavingExpense] = useState(false);
 
   const supabase = createClient();
@@ -60,7 +60,14 @@ export default function BudgetPage() {
       .eq("wedding_id", w.id)
       .order("created_at", { ascending: true });
 
+    const { data: vendorRows } = await supabase
+      .from("vendors")
+      .select("id, name, categories")
+      .eq("wedding_id", w.id)
+      .order("name");
+
     setItems((budgetItems ?? []) as BudgetItem[]);
+    setVendors((vendorRows ?? []) as VendorRef[]);
     setLoading(false);
   }, []);
 
@@ -82,7 +89,7 @@ export default function BudgetPage() {
 
   function openAdd() {
     setEditing(null);
-    setForm({ label: "", category: "Venue", estimated: "", paid: "", notes: "" });
+    setForm({ label: "", category: "Venue", vendor_id: null, estimated: "", paid: "", notes: "" });
     setExpenseOpen(true);
   }
 
@@ -90,7 +97,8 @@ export default function BudgetPage() {
     setEditing(item);
     setForm({
       label: item.label,
-      category: item.category,
+      category: item.category ?? "Venue",
+      vendor_id: item.vendor_id,
       estimated: item.estimated_amount,
       paid: item.paid_amount,
       notes: item.notes ?? "",
@@ -104,7 +112,8 @@ export default function BudgetPage() {
     const payload = {
       wedding_id: wedding.id,
       label: form.label,
-      category: form.category,
+      category: form.vendor_id ? null : form.category,
+      vendor_id: form.vendor_id,
       estimated_amount: Number(form.estimated) || 0,
       paid_amount: Number(form.paid) || 0,
       notes: form.notes || null,
@@ -128,10 +137,21 @@ export default function BudgetPage() {
     load();
   }
 
-  const grouped = CATEGORIES.map((cat) => ({
-    category: cat,
-    items: items.filter((i) => i.category === cat),
-  })).filter((g) => g.items.length > 0);
+  function effectiveLabels(item: BudgetItem): string[] {
+    if (item.vendor_id) {
+      const v = vendors.find((vv) => vv.id === item.vendor_id);
+      return v ? v.categories.map((c) => CATEGORY_LABELS[c]) : ["Other"];
+    }
+    return [item.category ?? "Other"];
+  }
+
+  const grouped = CATEGORY_ORDER.map((cat) => {
+    const label = CATEGORY_LABELS[cat];
+    return {
+      category: label,
+      items: items.filter((i) => effectiveLabels(i).includes(label)),
+    };
+  }).filter((g) => g.items.length > 0);
 
   return (
     <div className="flex flex-col min-h-screen max-w-2xl mx-auto w-full">
@@ -252,15 +272,57 @@ export default function BudgetPage() {
               <Input placeholder="e.g. Reception venue deposit" value={form.label} onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))} />
             </div>
             <div className="space-y-1.5">
-              <Label>Category</Label>
-              <select
-                className="flex h-10 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                value={form.category}
-                onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-              >
-                {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-              </select>
+              <Label>How is this categorized?</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setForm((f) => ({ ...f, vendor_id: null }))}
+                  className={cn(
+                    "rounded-lg border py-2 text-xs font-medium transition-colors",
+                    !form.vendor_id ? "border-accent bg-terra-100 text-accent" : "border-border bg-card text-muted-fg hover:bg-muted"
+                  )}
+                >
+                  Manual category
+                </button>
+                <button
+                  onClick={() => setForm((f) => ({ ...f, vendor_id: vendors[0]?.id ?? null }))}
+                  disabled={vendors.length === 0}
+                  className={cn(
+                    "rounded-lg border py-2 text-xs font-medium transition-colors disabled:opacity-40",
+                    form.vendor_id ? "border-accent bg-terra-100 text-accent" : "border-border bg-card text-muted-fg hover:bg-muted"
+                  )}
+                >
+                  Link to vendor
+                </button>
+              </div>
             </div>
+
+            {form.vendor_id ? (
+              <div className="space-y-1.5">
+                <Label>Vendor</Label>
+                <select
+                  className="flex h-10 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  value={form.vendor_id}
+                  onChange={(e) => setForm((f) => ({ ...f, vendor_id: e.target.value }))}
+                >
+                  {vendors.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.name} ({v.categories.map((c) => CATEGORY_LABELS[c]).join(", ")})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label>Category</Label>
+                <select
+                  className="flex h-10 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  value={form.category}
+                  onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                >
+                  {CATEGORY_ORDER.map((c) => <option key={c} value={CATEGORY_LABELS[c]}>{CATEGORY_LABELS[c]}</option>)}
+                </select>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Estimated (₱)</Label>
