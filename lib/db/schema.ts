@@ -86,6 +86,7 @@ export const budgetItems = pgTable("budget_items", {
   label:           text("label").notNull(),
   estimatedAmount: numeric("estimated_amount", { precision: 12, scale: 2 }).notNull().default("0"),
   paidAmount:      numeric("paid_amount", { precision: 12, scale: 2 }).notNull().default("0"),
+  paidDate:        date("paid_date"),
   vendorId:        uuid("vendor_id").references(() => vendors.id, { onDelete: "set null" }),
   dueDate:         date("due_date"),
   notes:           text("notes"),
