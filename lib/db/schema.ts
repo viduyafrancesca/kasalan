@@ -18,7 +18,8 @@ export const vendorStatusEnum = pgEnum("vendor_status", [
 
 export const vendorCategoryEnum = pgEnum("vendor_category", [
   "venue", "catering", "photography", "videography", "flowers",
-  "hair_makeup", "styling", "sounds_lights", "cake", "transportation", "other",
+  "hair_makeup", "styling", "attire", "sounds_lights", "cake",
+  "invitations", "transportation", "other",
 ]);
 
 export const sponsorRoleEnum = pgEnum("sponsor_role", [
@@ -81,11 +82,11 @@ export const checklistItems = pgTable("checklist_items", {
 export const budgetItems = pgTable("budget_items", {
   id:              uuid("id").primaryKey().defaultRandom(),
   weddingId:       uuid("wedding_id").notNull().references(() => weddings.id, { onDelete: "cascade" }),
-  category:        text("category").notNull(),
+  category:        text("category"),
   label:           text("label").notNull(),
   estimatedAmount: numeric("estimated_amount", { precision: 12, scale: 2 }).notNull().default("0"),
   paidAmount:      numeric("paid_amount", { precision: 12, scale: 2 }).notNull().default("0"),
-  vendorId:        uuid("vendor_id"),
+  vendorId:        uuid("vendor_id").references(() => vendors.id, { onDelete: "set null" }),
   dueDate:         date("due_date"),
   notes:           text("notes"),
   createdAt:       timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -108,7 +109,7 @@ export const guests = pgTable("guests", {
 export const vendors = pgTable("vendors", {
   id:            uuid("id").primaryKey().defaultRandom(),
   weddingId:     uuid("wedding_id").notNull().references(() => weddings.id, { onDelete: "cascade" }),
-  category:      vendorCategoryEnum("category").notNull(),
+  categories:    vendorCategoryEnum("categories").array().notNull(),
   name:          text("name").notNull(),
   contact:       text("contact"),
   priceRangeMin: numeric("price_range_min", { precision: 12, scale: 2 }),
