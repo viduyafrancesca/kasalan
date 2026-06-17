@@ -16,7 +16,7 @@ const NAV = [
 export function BottomNav() {
   const pathname = usePathname();
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-40 bg-card border-t border-border safe-area-bottom">
+    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-card border-t border-border safe-area-bottom">
       <div className="flex max-w-lg mx-auto">
         {NAV.map(({ href, label, Icon }) => {
           const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(href));

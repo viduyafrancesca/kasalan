@@ -54,8 +54,8 @@ export default async function DashboardPage() {
         ceremonyVenue={wedding.ceremony_venue}
       />
 
-      <div className="px-4 py-4 space-y-5">
-        <div className="grid grid-cols-2 gap-3">
+      <div className="px-4 lg:px-6 py-4 lg:py-6 space-y-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StatCard value={`${doneTasks ?? 0}/${totalTasks ?? 0}`} label="Tasks Done" />
           <StatCard value={totalBudget > 0 ? formatPHP(remaining) : "—"} label="Budget Left" />
           <StatCard value={attendingGuests ?? 0} label="RSVPs" />
@@ -67,15 +67,15 @@ export default async function DashboardPage() {
             <h2 className="font-display text-lg">Up Next</h2>
             <Link href="/checklist" className="text-xs text-accent">See all →</Link>
           </div>
-          <div className="space-y-2">
+          <div className="grid gap-2 lg:grid-cols-2">
             {(upNext ?? []).length === 0 ? (
-              <p className="text-sm text-muted-fg text-center py-6">All tasks complete! 🎉</p>
+              <p className="text-sm text-muted-fg text-center py-6 lg:col-span-2">All tasks complete! 🎉</p>
             ) : (
               (upNext ?? []).map((item) => (
                 <div key={item.id} className="bg-card rounded-xl border border-border px-4 py-3 flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full bg-accent flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium">{item.title}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{item.title}</p>
                     <p className="text-xs text-muted-fg">{item.category}</p>
                   </div>
                 </div>

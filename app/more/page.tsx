@@ -10,8 +10,8 @@ const SECTIONS = [
 
 export default function MorePage() {
   return (
-    <div className="flex flex-col min-h-screen max-w-lg mx-auto">
-      <div className="flex-1 pb-20">
+    <div className="flex flex-col min-h-screen max-w-2xl mx-auto w-full">
+      <div className="flex-1 pb-20 lg:pb-8">
         <div className="bg-background px-4 py-5 border-b border-border">
           <h1 className="font-display text-2xl">More</h1>
         </div>

@@ -140,8 +140,8 @@ export default function BudgetPage() {
   })).filter((g) => g.items.length > 0);
 
   return (
-    <div className="flex flex-col min-h-screen max-w-lg mx-auto">
-      <div className="flex-1 pb-20">
+    <div className="flex flex-col min-h-screen max-w-2xl mx-auto w-full">
+      <div className="flex-1 pb-20 lg:pb-8">
 
         {/* Header */}
         <div className="bg-accent px-4 py-5 text-accent-fg">
@@ -296,7 +296,7 @@ export default function BudgetPage() {
       {/* FAB */}
       <button
         onClick={openAdd}
-        className="fixed bottom-24 right-4 z-50 w-12 h-12 rounded-full bg-accent text-accent-fg shadow-lg flex items-center justify-center hover:bg-terra-500 transition-colors"
+        className="fixed bottom-24 right-4 lg:bottom-8 lg:right-8 z-50 w-12 h-12 rounded-full bg-accent text-accent-fg shadow-lg flex items-center justify-center hover:bg-terra-500 transition-colors"
         aria-label="Add expense"
       >
         <Plus className="w-5 h-5" />

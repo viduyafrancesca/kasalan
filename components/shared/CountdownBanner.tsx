@@ -11,7 +11,7 @@ export function CountdownBanner({ coupleName1, coupleName2, weddingDate, ceremon
   const days = weddingDate ? daysUntil(weddingDate) : null;
 
   return (
-    <div className="bg-accent px-5 py-5">
+    <div className="bg-accent px-5 lg:px-8 py-5 lg:py-8">
       <p className="text-accent-fg/80 text-[10px] uppercase tracking-widest">
         {coupleName1} &amp; {coupleName2}
       </p>

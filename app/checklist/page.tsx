@@ -109,8 +109,8 @@ export default function ChecklistPage() {
   const grouped = groupByTimeline(items, weddingDate);
 
   return (
-    <div className="flex flex-col min-h-screen max-w-lg mx-auto">
-      <div className="flex-1 pb-20">
+    <div className="flex flex-col min-h-screen max-w-2xl mx-auto w-full">
+      <div className="flex-1 pb-20 lg:pb-8">
 
         <div className="bg-background px-4 py-5 border-b border-border sticky top-0 z-10">
           <h1 className="font-display text-2xl">Checklist</h1>
@@ -247,7 +247,7 @@ export default function ChecklistPage() {
 
       <button
         onClick={openAdd}
-        className="fixed bottom-24 right-4 z-50 w-12 h-12 rounded-full bg-accent text-accent-fg shadow-lg flex items-center justify-center hover:bg-terra-500 transition-colors"
+        className="fixed bottom-24 right-4 lg:bottom-8 lg:right-8 z-50 w-12 h-12 rounded-full bg-accent text-accent-fg shadow-lg flex items-center justify-center hover:bg-terra-500 transition-colors"
         aria-label="Add task"
       >
         <Plus className="w-5 h-5" />
