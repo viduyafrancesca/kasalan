@@ -1,0 +1,374 @@
+export type TemplateInput = {
+  title: string;
+  category: string;
+  monthsBefore: number;
+  ceremonyTypes?: string[];
+  requiresCoordinator?: boolean | null;
+  requiresCotillion?: boolean | null;
+  isOptional?: boolean;
+  description?: string;
+  sortOrder?: number;
+};
+
+const ALL = ["catholic", "civil", "christian", "garden", "beach"];
+const CHURCH = ["catholic", "christian"];
+const CIVIL_ONLY = ["civil"];
+const NON_CIVIL = ["catholic", "christian", "garden", "beach"];
+
+export const CHECKLIST_TEMPLATES: TemplateInput[] = [
+  // ── 12 months before ─────────────────────────────────────────────────────
+  {
+    title: "Set your wedding date",
+    category: "Planning",
+    monthsBefore: 12,
+    ceremonyTypes: ALL,
+    sortOrder: 1,
+  },
+  {
+    title: "Decide on a budget",
+    category: "Budget",
+    monthsBefore: 12,
+    ceremonyTypes: ALL,
+    sortOrder: 2,
+  },
+  {
+    title: "Book your reception venue",
+    category: "Venue",
+    monthsBefore: 12,
+    ceremonyTypes: ALL,
+    sortOrder: 3,
+  },
+  {
+    title: "Book your church / ceremony venue",
+    category: "Venue",
+    monthsBefore: 12,
+    ceremonyTypes: CHURCH,
+    sortOrder: 4,
+  },
+  {
+    title: "Book your garden / outdoor ceremony venue",
+    category: "Venue",
+    monthsBefore: 12,
+    ceremonyTypes: ["garden", "beach"],
+    sortOrder: 4,
+  },
+  {
+    title: "Inquire with the civil registrar (LCR)",
+    category: "Legal",
+    monthsBefore: 12,
+    ceremonyTypes: CIVIL_ONLY,
+    sortOrder: 5,
+  },
+  {
+    title: "Start your guest list",
+    category: "Guests",
+    monthsBefore: 12,
+    ceremonyTypes: ALL,
+    sortOrder: 6,
+  },
+  {
+    title: "Hire a wedding coordinator",
+    category: "Coordinator",
+    monthsBefore: 12,
+    requiresCoordinator: true,
+    ceremonyTypes: ALL,
+    isOptional: true,
+    sortOrder: 7,
+  },
+
+  // ── 9 months before ──────────────────────────────────────────────────────
+  {
+    title: "Book photographer",
+    category: "Photography",
+    monthsBefore: 9,
+    ceremonyTypes: ALL,
+    sortOrder: 1,
+  },
+  {
+    title: "Book videographer",
+    category: "Photography",
+    monthsBefore: 9,
+    ceremonyTypes: ALL,
+    sortOrder: 2,
+  },
+  {
+    title: "Choose and invite principal sponsors (ninong & ninang)",
+    category: "Sponsors",
+    monthsBefore: 9,
+    ceremonyTypes: ALL,
+    sortOrder: 3,
+  },
+  {
+    title: "Start looking for bridal gown / suit",
+    category: "Attire",
+    monthsBefore: 9,
+    ceremonyTypes: ALL,
+    sortOrder: 4,
+  },
+  {
+    title: "Book caterer / food service",
+    category: "Catering",
+    monthsBefore: 9,
+    ceremonyTypes: ALL,
+    sortOrder: 5,
+  },
+  {
+    title: "Enroll in pre-Cana seminar",
+    category: "Church Requirements",
+    monthsBefore: 9,
+    ceremonyTypes: ["catholic"],
+    sortOrder: 6,
+    description: "Required by most Catholic parishes before a church wedding.",
+  },
+  {
+    title: "Book cotillion choreographer",
+    category: "Cotillion",
+    monthsBefore: 9,
+    requiresCotillion: true,
+    ceremonyTypes: ALL,
+    isOptional: true,
+    sortOrder: 7,
+  },
+
+  // ── 6 months before ──────────────────────────────────────────────────────
+  {
+    title: "Book hair & makeup artist",
+    category: "Beauty",
+    monthsBefore: 6,
+    ceremonyTypes: ALL,
+    sortOrder: 1,
+  },
+  {
+    title: "Book florist",
+    category: "Flowers",
+    monthsBefore: 6,
+    ceremonyTypes: ALL,
+    sortOrder: 2,
+  },
+  {
+    title: "Schedule canonical interview at the parish",
+    category: "Church Requirements",
+    monthsBefore: 6,
+    ceremonyTypes: ["catholic"],
+    sortOrder: 3,
+    description: "Interview with the parish priest; confirm requirements vary per diocese.",
+  },
+  {
+    title: "Source cord, veil, and arrhae",
+    category: "Ceremony Items",
+    monthsBefore: 6,
+    ceremonyTypes: ["catholic", "christian"],
+    sortOrder: 4,
+    description: "Traditional Filipino Catholic wedding items. Cord symbolizes unity, veil purity, arrhae prosperity.",
+  },
+  {
+    title: "Choose and assign secondary sponsors (cord, veil, arrhae, candle)",
+    category: "Sponsors",
+    monthsBefore: 6,
+    ceremonyTypes: ["catholic", "christian"],
+    isOptional: true,
+    sortOrder: 5,
+  },
+  {
+    title: "Send save-the-dates",
+    category: "Guests",
+    monthsBefore: 6,
+    ceremonyTypes: ALL,
+    sortOrder: 6,
+  },
+  {
+    title: "Book sound system & lighting",
+    category: "Reception",
+    monthsBefore: 6,
+    ceremonyTypes: ALL,
+    sortOrder: 7,
+  },
+  {
+    title: "Book wedding cake",
+    category: "Catering",
+    monthsBefore: 6,
+    ceremonyTypes: ALL,
+    sortOrder: 8,
+  },
+  {
+    title: "Finalize cotillion lineup (18 roses / 18 candles)",
+    category: "Cotillion",
+    monthsBefore: 6,
+    requiresCotillion: true,
+    ceremonyTypes: ALL,
+    isOptional: true,
+    sortOrder: 9,
+  },
+  {
+    title: "Prepare PSA birth certificates",
+    category: "Legal",
+    monthsBefore: 6,
+    ceremonyTypes: ALL,
+    sortOrder: 10,
+    description: "Required for marriage license application at the LCR.",
+  },
+  {
+    title: "Apply for marriage license at LCR",
+    category: "Legal",
+    monthsBefore: 6,
+    ceremonyTypes: ALL,
+    sortOrder: 11,
+    description: "Marriage license is valid for 120 days from issuance.",
+  },
+
+  // ── 3 months before ──────────────────────────────────────────────────────
+  {
+    title: "Send formal invitations",
+    category: "Guests",
+    monthsBefore: 3,
+    ceremonyTypes: ALL,
+    sortOrder: 1,
+  },
+  {
+    title: "Book bridal car / transportation",
+    category: "Transportation",
+    monthsBefore: 3,
+    ceremonyTypes: ALL,
+    sortOrder: 2,
+  },
+  {
+    title: "Finalize gown / suit fittings",
+    category: "Attire",
+    monthsBefore: 3,
+    ceremonyTypes: ALL,
+    sortOrder: 3,
+  },
+  {
+    title: "Book hotel room for wedding night",
+    category: "Accommodation",
+    monthsBefore: 3,
+    ceremonyTypes: ALL,
+    isOptional: true,
+    sortOrder: 4,
+  },
+  {
+    title: "Confirm all principal sponsors",
+    category: "Sponsors",
+    monthsBefore: 3,
+    ceremonyTypes: ALL,
+    sortOrder: 5,
+  },
+  {
+    title: "Begin rehearsals for cotillion",
+    category: "Cotillion",
+    monthsBefore: 3,
+    requiresCotillion: true,
+    ceremonyTypes: ALL,
+    isOptional: true,
+    sortOrder: 6,
+  },
+  {
+    title: "Plan reception program / emcee brief",
+    category: "Reception",
+    monthsBefore: 3,
+    requiresCoordinator: false,
+    ceremonyTypes: ALL,
+    sortOrder: 7,
+  },
+  {
+    title: "Create vendor call sheet & reception timeline",
+    category: "Planning",
+    monthsBefore: 3,
+    requiresCoordinator: false,
+    ceremonyTypes: ALL,
+    sortOrder: 8,
+    description: "When there's no coordinator, the couple or a trusted person manages the vendor timeline.",
+  },
+
+  // ── 1 month before ───────────────────────────────────────────────────────
+  {
+    title: "Confirm final headcount with caterer",
+    category: "Catering",
+    monthsBefore: 1,
+    ceremonyTypes: ALL,
+    sortOrder: 1,
+  },
+  {
+    title: "Confirm all vendor call times",
+    category: "Planning",
+    monthsBefore: 1,
+    ceremonyTypes: ALL,
+    sortOrder: 2,
+  },
+  {
+    title: "Coordinate with parish coordinator for ceremony flow",
+    category: "Church Requirements",
+    monthsBefore: 1,
+    ceremonyTypes: ["catholic"],
+    sortOrder: 3,
+  },
+  {
+    title: "Do a venue ocular / walkthrough",
+    category: "Venue",
+    monthsBefore: 1,
+    ceremonyTypes: ALL,
+    sortOrder: 4,
+  },
+  {
+    title: "Prepare cash for on-the-day tips / payments",
+    category: "Budget",
+    monthsBefore: 1,
+    ceremonyTypes: ALL,
+    sortOrder: 5,
+  },
+  {
+    title: "Assign an on-the-day coordinator among family/friends",
+    category: "Planning",
+    monthsBefore: 1,
+    requiresCoordinator: false,
+    ceremonyTypes: ALL,
+    sortOrder: 6,
+  },
+
+  // ── 1 week before ─────────────────────────────────────────────────────────
+  {
+    title: "Confirm marriage license is ready",
+    category: "Legal",
+    monthsBefore: 0.25,
+    ceremonyTypes: ALL,
+    sortOrder: 1,
+  },
+  {
+    title: "Prepare arrhae, rings, and ceremony items",
+    category: "Ceremony Items",
+    monthsBefore: 0.25,
+    ceremonyTypes: ["catholic", "christian"],
+    sortOrder: 2,
+  },
+  {
+    title: "Final gown / suit pickup",
+    category: "Attire",
+    monthsBefore: 0.25,
+    ceremonyTypes: ALL,
+    sortOrder: 3,
+  },
+  {
+    title: "Send final RSVP reminder",
+    category: "Guests",
+    monthsBefore: 0.25,
+    ceremonyTypes: ALL,
+    sortOrder: 4,
+  },
+  {
+    title: "Prepare wedding day emergency kit",
+    category: "Planning",
+    monthsBefore: 0.25,
+    ceremonyTypes: ALL,
+    sortOrder: 5,
+    description: "Safety pins, deodorant, pain reliever, sewing kit, double-sided tape, straw for lipstick.",
+  },
+  {
+    title: "Final cotillion rehearsal",
+    category: "Cotillion",
+    monthsBefore: 0.25,
+    requiresCotillion: true,
+    ceremonyTypes: ALL,
+    isOptional: true,
+    sortOrder: 6,
+  },
+];
