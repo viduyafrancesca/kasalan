@@ -5,6 +5,10 @@ import { CountdownBanner } from "@/components/shared/CountdownBanner";
 import { StatCard } from "@/components/shared/StatCard";
 import { formatPHP } from "@/lib/utils";
 import Link from "next/link";
+import {
+  type Reminder, type DueBudgetRow, type VendorRow,
+  buildPaymentReminder, buildRsvpReminder, buildEntourageReminder, buildVendorGapReminder,
+} from "@/lib/dashboardReminders";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -18,15 +22,23 @@ export default async function DashboardPage() {
     { count: totalTasks },
     { count: doneTasks },
     { data: budgetItems },
+    { data: dueBudgetItems },
     { count: attendingGuests },
+    { count: pendingGuests },
     { count: confirmedSponsors },
+    { data: unconfirmedSponsors },
+    { data: vendors },
     { data: upNext },
   ] = await Promise.all([
     supabase.from("checklist_items").select("*", { count: "exact", head: true }).eq("wedding_id", wedding.id),
     supabase.from("checklist_items").select("*", { count: "exact", head: true }).eq("wedding_id", wedding.id).eq("completed", true),
     supabase.from("budget_items").select("estimated_amount, paid_amount").eq("wedding_id", wedding.id),
+    supabase.from("budget_items").select("label, due_date, estimated_amount, paid_amount, vendor_id").eq("wedding_id", wedding.id).not("due_date", "is", null),
     supabase.from("guests").select("*", { count: "exact", head: true }).eq("wedding_id", wedding.id).eq("rsvp_status", "attending"),
+    supabase.from("guests").select("*", { count: "exact", head: true }).eq("wedding_id", wedding.id).eq("rsvp_status", "pending"),
     supabase.from("sponsors").select("*", { count: "exact", head: true }).eq("wedding_id", wedding.id).eq("confirmed", true),
+    supabase.from("sponsors").select("name").eq("wedding_id", wedding.id).eq("confirmed", false),
+    supabase.from("vendors").select("id, name, categories, status").eq("wedding_id", wedding.id),
     supabase.from("checklist_items")
       .select("id, title, category, months_before")
       .eq("wedding_id", wedding.id)
@@ -38,6 +50,13 @@ export default async function DashboardPage() {
   const totalBudget = Number(wedding.budget_total ?? 0);
   const totalSpent  = (budgetItems ?? []).reduce((s, b) => s + Number(b.paid_amount ?? 0), 0);
   const remaining   = totalBudget - totalSpent;
+
+  const reminders = [
+    buildPaymentReminder((dueBudgetItems ?? []) as DueBudgetRow[], (vendors ?? []) as VendorRow[]),
+    buildRsvpReminder(pendingGuests ?? 0),
+    buildEntourageReminder((unconfirmedSponsors ?? []).map((s) => s.name)),
+    buildVendorGapReminder((vendors ?? []) as VendorRow[]),
+  ].filter((r): r is Reminder => r !== null);
 
   return (
     <div>
@@ -55,6 +74,24 @@ export default async function DashboardPage() {
           <StatCard value={attendingGuests ?? 0} label="RSVPs" />
           <StatCard value={confirmedSponsors ?? 0} label="Sponsors" />
         </div>
+
+        {reminders.length > 0 && (
+          <div>
+            <h2 className="font-display text-lg mb-3">Reminders</h2>
+            <div className="space-y-2">
+              {reminders.map((r) => (
+                <Link
+                  key={r.key}
+                  href={r.href}
+                  className="bg-card rounded-xl border border-border px-4 py-3 flex items-center gap-3 hover:bg-muted transition-colors"
+                >
+                  <div className="w-2 h-2 rounded-full bg-accent flex-shrink-0" />
+                  <p className="text-sm font-medium">{r.text}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div>
           <div className="flex items-center justify-between mb-3">
