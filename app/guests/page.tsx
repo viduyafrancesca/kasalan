@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 type RsvpStatus = "pending" | "attending" | "declined";
 type SponsorRole =
   | "principal" | "cord" | "veil" | "arrhae" | "candle"
-  | "best_man" | "maid_of_honor" | "secondary";
+  | "best_man" | "maid_of_honor" | "bridesmaid" | "groomsman";
 
 type Guest = {
   kind: "guest";
@@ -67,11 +67,12 @@ const ROLE_LABELS: Record<SponsorRole, string> = {
   candle:       "Candle",
   best_man:     "Best Man",
   maid_of_honor:"Maid of Honor",
-  secondary:    "Secondary",
+  bridesmaid:   "Bridesmaid",
+  groomsman:    "Groomsman",
 };
 
 const ROLE_ORDER: SponsorRole[] = [
-  "principal", "cord", "veil", "arrhae", "candle", "best_man", "maid_of_honor", "secondary",
+  "principal", "cord", "veil", "arrhae", "candle", "best_man", "maid_of_honor", "bridesmaid", "groomsman",
 ];
 
 const EMPTY_GUEST = {

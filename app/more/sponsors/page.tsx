@@ -13,7 +13,7 @@ import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
-type SponsorRole = "principal" | "cord" | "veil" | "arrhae" | "candle" | "best_man" | "maid_of_honor" | "secondary";
+type SponsorRole = "principal" | "cord" | "veil" | "arrhae" | "candle" | "best_man" | "maid_of_honor" | "bridesmaid" | "groomsman";
 
 type Sponsor = {
   id: string;
@@ -33,7 +33,8 @@ const ROLE_LABELS: Record<SponsorRole, string> = {
   candle:       "Candle",
   best_man:     "Best Man",
   maid_of_honor:"Maid of Honor",
-  secondary:    "Secondary Sponsors",
+  bridesmaid:   "Bridesmaids",
+  groomsman:    "Groomsmen",
 };
 
 const ROLE_DESCRIPTIONS: Record<SponsorRole, string> = {
@@ -44,10 +45,11 @@ const ROLE_DESCRIPTIONS: Record<SponsorRole, string> = {
   candle:       "Symbol of the light of Christ",
   best_man:     "Groom's closest friend or brother",
   maid_of_honor:"Bride's closest friend or sister",
-  secondary:    "Additional witnesses and supporters",
+  bridesmaid:   "Bride's side of the entourage",
+  groomsman:    "Groom's side of the entourage",
 };
 
-const ROLE_ORDER: SponsorRole[] = ["principal", "cord", "veil", "arrhae", "candle", "best_man", "maid_of_honor", "secondary"];
+const ROLE_ORDER: SponsorRole[] = ["principal", "cord", "veil", "arrhae", "candle", "best_man", "maid_of_honor", "bridesmaid", "groomsman"];
 
 const EMPTY_FORM = { name: "", phone: "", email: "", role: "principal" as SponsorRole, confirmed: false, notes: "" };
 

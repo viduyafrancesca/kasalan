@@ -22,7 +22,7 @@ export const vendorCategoryEnum = pgEnum("vendor_category", [
 ]);
 
 export const sponsorRoleEnum = pgEnum("sponsor_role", [
-  "principal", "cord", "veil", "arrhae", "candle", "best_man", "maid_of_honor", "secondary",
+  "principal", "cord", "veil", "arrhae", "candle", "best_man", "maid_of_honor", "bridesmaid", "groomsman",
 ]);
 
 // ─── Tables ──────────────────────────────────────────────────────────────────
