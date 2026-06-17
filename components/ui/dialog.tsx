@@ -31,11 +31,24 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-[50%] top-[50%] z-50 w-full max-w-md translate-x-[-50%] translate-y-[-50%] rounded-2xl bg-card border border-border p-6 shadow-xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+        // Base
+        "fixed z-50 bg-card shadow-xl duration-200 overflow-y-auto",
+        // Mobile: bottom sheet
+        "inset-x-0 bottom-0 rounded-t-2xl border-t border-border p-5 max-h-[92dvh]",
+        // Desktop: centered modal
+        "sm:inset-x-auto sm:bottom-auto sm:border sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-md sm:rounded-2xl sm:p-6 sm:max-h-[90dvh]",
+        // Animations — mobile slides from bottom, desktop fades + slight lift + zoom
+        "data-[state=open]:animate-in data-[state=closed]:animate-out",
+        "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
+        "data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom",
+        "sm:data-[state=open]:slide-in-from-bottom-4 sm:data-[state=closed]:slide-out-to-bottom-4",
+        "sm:data-[state=open]:zoom-in-95 sm:data-[state=closed]:zoom-out-95",
         className
       )}
       {...props}
     >
+      {/* Drag handle — mobile only */}
+      <div className="sm:hidden mx-auto mb-4 h-1.5 w-10 rounded-full bg-border" />
       {children}
       <DialogPrimitive.Close className="absolute right-4 top-4 rounded-lg opacity-70 hover:opacity-100">
         <X className="h-4 w-4" />
