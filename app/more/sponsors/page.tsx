@@ -12,7 +12,7 @@ import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
-type SponsorRole = "principal" | "cord" | "veil" | "arrhae" | "candle" | "secondary";
+type SponsorRole = "principal" | "cord" | "veil" | "arrhae" | "candle" | "best_man" | "maid_of_honor" | "secondary";
 
 type Sponsor = {
   id: string;
@@ -25,24 +25,28 @@ type Sponsor = {
 };
 
 const ROLE_LABELS: Record<SponsorRole, string> = {
-  principal:  "Principal Sponsors",
-  cord:       "Cord",
-  veil:       "Veil",
-  arrhae:     "Arrhae",
-  candle:     "Candle",
-  secondary:  "Secondary Sponsors",
+  principal:    "Principal Sponsors",
+  cord:         "Cord",
+  veil:         "Veil",
+  arrhae:       "Arrhae",
+  candle:       "Candle",
+  best_man:     "Best Man",
+  maid_of_honor:"Maid of Honor",
+  secondary:    "Secondary Sponsors",
 };
 
 const ROLE_DESCRIPTIONS: Record<SponsorRole, string> = {
-  principal: "Ninong & Ninang — witness the vows",
-  cord:      "Symbol of everlasting bond",
-  veil:      "Symbol of purity and unity",
-  arrhae:    "13 coins — symbol of prosperity",
-  candle:    "Symbol of the light of Christ",
-  secondary: "Additional witnesses and supporters",
+  principal:    "Ninong & Ninang — witness the vows",
+  cord:         "Symbol of everlasting bond",
+  veil:         "Symbol of purity and unity",
+  arrhae:       "13 coins — symbol of prosperity",
+  candle:       "Symbol of the light of Christ",
+  best_man:     "Groom's closest friend or brother",
+  maid_of_honor:"Bride's closest friend or sister",
+  secondary:    "Additional witnesses and supporters",
 };
 
-const ROLE_ORDER: SponsorRole[] = ["principal", "cord", "veil", "arrhae", "candle", "secondary"];
+const ROLE_ORDER: SponsorRole[] = ["principal", "cord", "veil", "arrhae", "candle", "best_man", "maid_of_honor", "secondary"];
 
 const EMPTY_FORM = { name: "", phone: "", email: "", role: "principal" as SponsorRole, confirmed: false, notes: "" };
 
@@ -226,7 +230,7 @@ export default function SponsorsPage() {
                         : "border-border bg-card text-muted-fg hover:bg-muted"
                     )}
                   >
-                    {ROLE_LABELS[r].replace(" Sponsors", "").replace("Secondary", "Secondary")}
+                    {ROLE_LABELS[r].replace(" Sponsors", "")}
                   </button>
                 ))}
               </div>
