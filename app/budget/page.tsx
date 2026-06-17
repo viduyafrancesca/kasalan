@@ -20,10 +20,15 @@ type BudgetItem = {
   label: string;
   estimated_amount: string;
   paid_amount: string;
+  paid_date: string | null;
   notes: string | null;
 };
 
-type VendorRef = { id: string; name: string; categories: VendorCategory[] };
+type VendorRef = { id: string; name: string; categories: VendorCategory[]; price_range_max: string | null };
+
+function todayStr(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 type Wedding = { id: string; budget_total: string | null };
 
@@ -41,7 +46,7 @@ export default function BudgetPage() {
   // Add/edit expense modal
   const [expenseOpen, setExpenseOpen] = useState(false);
   const [editing, setEditing] = useState<BudgetItem | null>(null);
-  const [form, setForm] = useState({ label: "", category: "Venue", vendor_id: null as string | null, estimated: "", paid: "", notes: "" });
+  const [form, setForm] = useState({ label: "", category: "Venue", vendor_id: null as string | null, estimated: "", paid: "", paid_date: todayStr(), notes: "" });
   const [savingExpense, setSavingExpense] = useState(false);
 
   const supabase = createClient();
@@ -62,7 +67,7 @@ export default function BudgetPage() {
 
     const { data: vendorRows } = await supabase
       .from("vendors")
-      .select("id, name, categories")
+      .select("id, name, categories, price_range_max")
       .eq("wedding_id", w.id)
       .order("name");
 
@@ -89,7 +94,7 @@ export default function BudgetPage() {
 
   function openAdd() {
     setEditing(null);
-    setForm({ label: "", category: "Venue", vendor_id: null, estimated: "", paid: "", notes: "" });
+    setForm({ label: "", category: "Venue", vendor_id: null, estimated: "", paid: "", paid_date: todayStr(), notes: "" });
     setExpenseOpen(true);
   }
 
@@ -101,6 +106,7 @@ export default function BudgetPage() {
       vendor_id: item.vendor_id,
       estimated: item.estimated_amount,
       paid: item.paid_amount,
+      paid_date: item.paid_date ?? todayStr(),
       notes: item.notes ?? "",
     });
     setExpenseOpen(true);
@@ -116,6 +122,7 @@ export default function BudgetPage() {
       vendor_id: form.vendor_id,
       estimated_amount: Number(form.estimated) || 0,
       paid_amount: Number(form.paid) || 0,
+      paid_date: form.paid_date || null,
       notes: form.notes || null,
     };
     if (editing) {
@@ -284,7 +291,14 @@ export default function BudgetPage() {
                   Manual category
                 </button>
                 <button
-                  onClick={() => setForm((f) => ({ ...f, vendor_id: vendors[0]?.id ?? null }))}
+                  onClick={() => {
+                    const v = vendors[0];
+                    setForm((f) => ({
+                      ...f,
+                      vendor_id: v?.id ?? null,
+                      estimated: v?.price_range_max ? v.price_range_max : f.estimated,
+                    }));
+                  }}
                   disabled={vendors.length === 0}
                   className={cn(
                     "rounded-lg border py-2 text-xs font-medium transition-colors disabled:opacity-40",
@@ -302,7 +316,15 @@ export default function BudgetPage() {
                 <select
                   className="flex h-10 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   value={form.vendor_id}
-                  onChange={(e) => setForm((f) => ({ ...f, vendor_id: e.target.value }))}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    const v = vendors.find((vv) => vv.id === id);
+                    setForm((f) => ({
+                      ...f,
+                      vendor_id: id,
+                      estimated: v?.price_range_max ? v.price_range_max : f.estimated,
+                    }));
+                  }}
                 >
                   {vendors.map((v) => (
                     <option key={v.id} value={v.id}>
@@ -329,15 +351,19 @@ export default function BudgetPage() {
                 <Input type="number" placeholder="0" value={form.estimated} onChange={(e) => setForm((f) => ({ ...f, estimated: e.target.value }))} />
               </div>
               <div className="space-y-1.5">
-                <Label>Paid (₱)</Label>
+                <Label>Paid (₱) *</Label>
                 <Input type="number" placeholder="0" value={form.paid} onChange={(e) => setForm((f) => ({ ...f, paid: e.target.value }))} />
               </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Payment date *</Label>
+              <Input type="date" value={form.paid_date} onChange={(e) => setForm((f) => ({ ...f, paid_date: e.target.value }))} />
             </div>
             <div className="space-y-1.5">
               <Label>Notes (optional)</Label>
               <Input placeholder="e.g. 50% due 3 months before" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
             </div>
-            <Button className="w-full" disabled={!form.label || savingExpense} onClick={saveExpense}>
+            <Button className="w-full" disabled={!form.label || !form.paid || !form.paid_date || savingExpense} onClick={saveExpense}>
               {savingExpense ? "Saving..." : editing ? "Save changes" : "Add expense"}
             </Button>
             {editing && (
