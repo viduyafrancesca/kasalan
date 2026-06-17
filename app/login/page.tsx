@@ -2,28 +2,36 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+type Mode = "signin" | "signup";
+
 export default function LoginPage() {
+  const router = useRouter();
+  const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
-  const [sent, setSent] = useState(false);
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleMagicLink(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError("");
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: `${location.origin}/auth/callback` },
-    });
+
+    const { error } =
+      mode === "signup"
+        ? await supabase.auth.signUp({ email, password })
+        : await supabase.auth.signInWithPassword({ email, password });
+
     setLoading(false);
     if (error) { setError(error.message); return; }
-    setSent(true);
+    router.push("/dashboard");
+    router.refresh();
   }
 
   return (
@@ -34,33 +42,50 @@ export default function LoginPage() {
           <p className="text-muted-fg text-sm tracking-wide uppercase">Philippine Wedding Planner</p>
         </div>
 
-        {sent ? (
-          <div className="rounded-xl bg-terra-100 border border-terra-200 p-6 text-center space-y-2">
-            <p className="font-medium text-foreground">Check your email</p>
-            <p className="text-sm text-muted-fg">We sent a magic link to <strong>{email}</strong>. Click it to sign in.</p>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="email">Email address</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
           </div>
-        ) : (
-          <form onSubmit={handleMagicLink} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="email">Email address</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Sending..." : "Send magic link"}
-            </Button>
-          </form>
-        )}
+          <div className="space-y-1.5">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder={mode === "signup" ? "Choose a password" : "Your password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+            />
+          </div>
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Please wait..." : mode === "signup" ? "Create account" : "Sign in"}
+          </Button>
+        </form>
 
-        <p className="text-center text-xs text-muted-fg">
-          No password needed — we&apos;ll email you a sign-in link.
+        <p className="text-center text-sm text-muted-fg">
+          {mode === "signin" ? (
+            <>No account yet?{" "}
+              <button onClick={() => { setMode("signup"); setError(""); }} className="text-accent underline">
+                Create one
+              </button>
+            </>
+          ) : (
+            <>Already have an account?{" "}
+              <button onClick={() => { setMode("signin"); setError(""); }} className="text-accent underline">
+                Sign in
+              </button>
+            </>
+          )}
         </p>
       </div>
     </main>
