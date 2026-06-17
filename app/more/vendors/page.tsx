@@ -13,15 +13,13 @@ import { formatPHP } from "@/lib/utils";
 import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { type VendorCategory, CATEGORY_LABELS, CATEGORY_ORDER } from "@/lib/categories";
 
 type VendorStatus = "interested" | "shortlisted" | "booked" | "declined";
-type VendorCategory =
-  | "venue" | "catering" | "photography" | "videography" | "flowers"
-  | "hair_makeup" | "styling" | "sounds_lights" | "cake" | "transportation" | "other";
 
 type Vendor = {
   id: string;
-  category: VendorCategory;
+  categories: VendorCategory[];
   name: string;
   contact: string | null;
   price_range_min: string | null;
@@ -29,22 +27,6 @@ type Vendor = {
   status: VendorStatus;
   notes: string | null;
 };
-
-const CATEGORY_LABELS: Record<VendorCategory, string> = {
-  venue:          "Venue",
-  catering:       "Catering",
-  photography:    "Photography",
-  videography:    "Videography",
-  flowers:        "Flowers",
-  hair_makeup:    "Hair & Makeup",
-  styling:        "Styling",
-  sounds_lights:  "Sounds & Lights",
-  cake:           "Cake",
-  transportation: "Transportation",
-  other:          "Other",
-};
-
-const CATEGORY_ORDER = Object.keys(CATEGORY_LABELS) as VendorCategory[];
 
 const STATUS_OPTIONS: { value: VendorStatus; label: string }[] = [
   { value: "interested",  label: "Interested" },
@@ -61,7 +43,7 @@ const STATUS_VARIANT: Record<VendorStatus, "default" | "success" | "secondary" |
 };
 
 const EMPTY_FORM = {
-  name: "", category: "venue" as VendorCategory, contact: "",
+  name: "", categories: ["venue"] as VendorCategory[], contact: "",
   price_min: "", price_max: "", status: "interested" as VendorStatus, notes: "",
 };
 
@@ -92,7 +74,7 @@ export default function VendorsPage() {
 
   function openAdd(defaultCategory?: VendorCategory) {
     setEditing(null);
-    setForm({ ...EMPTY_FORM, category: defaultCategory ?? "venue" });
+    setForm({ ...EMPTY_FORM, categories: defaultCategory ? [defaultCategory] : ["venue"] });
     setOpen(true);
   }
 
@@ -100,7 +82,7 @@ export default function VendorsPage() {
     setEditing(v);
     setForm({
       name: v.name,
-      category: v.category,
+      categories: v.categories,
       contact: v.contact ?? "",
       price_min: v.price_range_min ?? "",
       price_max: v.price_range_max ?? "",
@@ -116,7 +98,7 @@ export default function VendorsPage() {
     const payload = {
       wedding_id: weddingId,
       name: form.name.trim(),
-      category: form.category,
+      categories: form.categories,
       contact: form.contact || null,
       price_range_min: form.price_min ? Number(form.price_min) : null,
       price_range_max: form.price_max ? Number(form.price_max) : null,
@@ -147,7 +129,7 @@ export default function VendorsPage() {
   const grouped = CATEGORY_ORDER.map((cat) => ({
     cat,
     label: CATEGORY_LABELS[cat],
-    items: vendors.filter((v) => v.category === cat),
+    items: vendors.filter((v) => v.categories.includes(cat)),
   })).filter((g) => g.items.length > 0);
 
   return (
@@ -229,14 +211,31 @@ export default function VendorsPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Category</Label>
-              <select
-                className="flex h-10 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                value={form.category}
-                onChange={(e) => setForm((f) => ({ ...f, category: e.target.value as VendorCategory }))}
-              >
-                {CATEGORY_ORDER.map((c) => <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>)}
-              </select>
+              <Label>Categories</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {CATEGORY_ORDER.map((c) => {
+                  const selected = form.categories.includes(c);
+                  return (
+                    <button
+                      key={c}
+                      onClick={() => setForm((f) => ({
+                        ...f,
+                        categories: selected
+                          ? f.categories.filter((x) => x !== c)
+                          : [...f.categories, c],
+                      }))}
+                      className={cn(
+                        "rounded-lg border py-2 text-xs font-medium transition-colors",
+                        selected
+                          ? "border-accent bg-terra-100 text-accent"
+                          : "border-border bg-card text-muted-fg hover:bg-muted"
+                      )}
+                    >
+                      {CATEGORY_LABELS[c]}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="space-y-1.5">
@@ -298,7 +297,7 @@ export default function VendorsPage() {
               />
             </div>
 
-            <Button className="w-full" disabled={!form.name.trim() || saving} onClick={save}>
+            <Button className="w-full" disabled={!form.name.trim() || form.categories.length === 0 || saving} onClick={save}>
               {saving ? "Saving..." : editing ? "Save changes" : "Add vendor"}
             </Button>
             {editing && (
