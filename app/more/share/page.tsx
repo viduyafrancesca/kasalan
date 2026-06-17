@@ -1,67 +1,70 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getWeddingForUser } from "@/lib/supabase/getWedding";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { BottomNav } from "@/components/shared/BottomNav";
 import Link from "next/link";
 
 export default function SharePage() {
   const [weddingId, setWeddingId] = useState<string | null>(null);
-  const [shareUrl, setShareUrl] = useState<string | null>(null);
-  const [partnerEmail, setPartnerEmail] = useState("");
-  const [inviteSent, setInviteSent] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [copyDone, setCopyDone] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: wedding } = await supabase
-        .from("weddings")
-        .select("id")
-        .or(`owner_id.eq.${user.id}`)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
-      if (wedding) setWeddingId(wedding.id);
-    })();
+  const [partnerInviteUrl, setPartnerInviteUrl] = useState<string | null>(null);
+  const [generatingPartner, setGeneratingPartner] = useState(false);
+  const [partnerCopied, setPartnerCopied] = useState(false);
+
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [generatingShare, setGeneratingShare] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+
+  const supabase = createClient();
+
+  const load = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const w = await getWeddingForUser(supabase, user.id);
+    if (w) setWeddingId(w.id);
   }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function generatePartnerInvite() {
+    if (!weddingId) return;
+    setGeneratingPartner(true);
+    const { data } = await supabase
+      .from("partner_invites")
+      .insert({ wedding_id: weddingId })
+      .select("token")
+      .single();
+    if (data) setPartnerInviteUrl(`${location.origin}/invite/${data.token}`);
+    setGeneratingPartner(false);
+  }
+
+  async function copyPartnerInvite() {
+    if (!partnerInviteUrl) return;
+    await navigator.clipboard.writeText(partnerInviteUrl);
+    setPartnerCopied(true);
+    setTimeout(() => setPartnerCopied(false), 2000);
+  }
 
   async function generateShareLink() {
     if (!weddingId) return;
-    setLoading(true);
-    const supabase = createClient();
+    setGeneratingShare(true);
     const { data } = await supabase
       .from("share_tokens")
       .insert({ wedding_id: weddingId })
       .select("token")
       .single();
     if (data) setShareUrl(`${location.origin}/share/${data.token}`);
-    setLoading(false);
+    setGeneratingShare(false);
   }
 
-  async function handleCopy() {
+  async function copyShareLink() {
     if (!shareUrl) return;
     await navigator.clipboard.writeText(shareUrl);
-    setCopyDone(true);
-    setTimeout(() => setCopyDone(false), 2000);
-  }
-
-  async function handleInvitePartner(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    const supabase = createClient();
-    await supabase.auth.signInWithOtp({
-      email: partnerEmail,
-      options: { emailRedirectTo: `${location.origin}/auth/callback` },
-    });
-    setInviteSent(true);
-    setLoading(false);
+    setShareCopied(true);
+    setTimeout(() => setShareCopied(false), 2000);
   }
 
   return (
@@ -73,46 +76,66 @@ export default function SharePage() {
         </div>
 
         <div className="px-4 py-6 space-y-8">
+
+          {/* Partner invite */}
           <div className="space-y-3">
             <h2 className="font-display text-lg">Invite your partner</h2>
-            <p className="text-sm text-muted-fg">Your partner will get full access to edit the wedding plan together.</p>
-            {inviteSent ? (
-              <div className="rounded-xl bg-terra-100 border border-terra-200 p-4 text-sm">
-                Invite sent to <strong>{partnerEmail}</strong> — they'll receive a magic link to join.
-              </div>
-            ) : (
-              <form onSubmit={handleInvitePartner} className="space-y-3">
-                <div className="space-y-1.5">
-                  <Label>Partner&apos;s email</Label>
-                  <Input
-                    type="email"
-                    placeholder="partner@example.com"
-                    value={partnerEmail}
-                    onChange={(e) => setPartnerEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>Send invite</Button>
-              </form>
-            )}
-          </div>
-
-          <div className="space-y-3">
-            <h2 className="font-display text-lg">Family view-only link</h2>
-            <p className="text-sm text-muted-fg">Share a read-only link with family and friends so they can follow along.</p>
-            {shareUrl ? (
+            <p className="text-sm text-muted-fg">
+              Generate a link and send it to your partner — they&apos;ll sign in and get full edit access to your wedding plan.
+            </p>
+            {partnerInviteUrl ? (
               <div className="space-y-2">
-                <div className="bg-card rounded-lg border border-border px-3 py-2 text-sm break-all text-muted-fg">{shareUrl}</div>
-                <Button variant="outline" className="w-full" onClick={handleCopy}>
-                  {copyDone ? "Copied!" : "Copy link"}
+                <div className="bg-card rounded-lg border border-border px-3 py-2 text-sm break-all text-muted-fg">
+                  {partnerInviteUrl}
+                </div>
+                <Button className="w-full" onClick={copyPartnerInvite}>
+                  {partnerCopied ? "Copied!" : "Copy invite link"}
                 </Button>
+                <button
+                  onClick={() => setPartnerInviteUrl(null)}
+                  className="w-full text-xs text-muted-fg hover:text-foreground transition-colors"
+                >
+                  Generate a new link
+                </button>
               </div>
             ) : (
-              <Button variant="outline" className="w-full" onClick={generateShareLink} disabled={loading || !weddingId}>
-                {loading ? "Generating..." : "Generate share link"}
+              <Button
+                className="w-full"
+                onClick={generatePartnerInvite}
+                disabled={generatingPartner || !weddingId}
+              >
+                {generatingPartner ? "Generating..." : "Generate partner invite link"}
               </Button>
             )}
           </div>
+
+          {/* Family view-only link */}
+          <div className="space-y-3">
+            <h2 className="font-display text-lg">Family view-only link</h2>
+            <p className="text-sm text-muted-fg">
+              Share a read-only link with family and friends so they can follow along.
+            </p>
+            {shareUrl ? (
+              <div className="space-y-2">
+                <div className="bg-card rounded-lg border border-border px-3 py-2 text-sm break-all text-muted-fg">
+                  {shareUrl}
+                </div>
+                <Button variant="outline" className="w-full" onClick={copyShareLink}>
+                  {shareCopied ? "Copied!" : "Copy link"}
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={generateShareLink}
+                disabled={generatingShare || !weddingId}
+              >
+                {generatingShare ? "Generating..." : "Generate share link"}
+              </Button>
+            )}
+          </div>
+
         </div>
       </div>
       <BottomNav />

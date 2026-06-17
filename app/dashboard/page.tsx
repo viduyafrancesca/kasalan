@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getWeddingForUser } from "@/lib/supabase/getWedding";
 import { redirect } from "next/navigation";
 import { CountdownBanner } from "@/components/shared/CountdownBanner";
 import { StatCard } from "@/components/shared/StatCard";
@@ -10,14 +11,7 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: wedding } = await supabase
-    .from("weddings")
-    .select("*")
-    .or(`owner_id.eq.${user.id}`)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .single();
-
+  const wedding = await getWeddingForUser(supabase, user.id);
   if (!wedding) redirect("/setup");
 
   const [

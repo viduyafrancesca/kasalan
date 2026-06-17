@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getWeddingForUser } from "@/lib/supabase/getWedding";
 import { BottomNav } from "@/components/shared/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,7 +45,7 @@ export default function ChecklistPage() {
   const load = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const { data: w } = await supabase.from("weddings").select("id, wedding_date").eq("owner_id", user.id).order("created_at", { ascending: false }).limit(1).single();
+    const w = await getWeddingForUser(supabase, user.id);
     if (!w) return;
     setWeddingId(w.id);
     setWeddingDate(w.wedding_date);

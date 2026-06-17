@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getWeddingForUser } from "@/lib/supabase/getWedding";
 import { BottomNav } from "@/components/shared/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,14 +50,7 @@ export default function BudgetPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data: w } = await supabase
-      .from("weddings")
-      .select("id, budget_total")
-      .eq("owner_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
-
+    const w = await getWeddingForUser(supabase, user.id);
     if (!w) return;
     setWedding(w);
 
