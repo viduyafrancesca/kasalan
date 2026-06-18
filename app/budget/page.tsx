@@ -48,6 +48,7 @@ export default function BudgetPage() {
   const [editing, setEditing] = useState<BudgetItem | null>(null);
   const [form, setForm] = useState({ label: "", category: "Venue", vendor_id: null as string | null, estimated: "", paid: "", paid_date: todayStr(), notes: "" });
   const [savingExpense, setSavingExpense] = useState(false);
+  const [expenseError, setExpenseError] = useState<string | null>(null);
 
   const supabase = createClient();
 
@@ -95,12 +96,14 @@ export default function BudgetPage() {
 
   function openAdd() {
     setEditing(null);
+    setExpenseError(null);
     setForm({ label: "", category: "Venue", vendor_id: null, estimated: "", paid: "", paid_date: todayStr(), notes: "" });
     setExpenseOpen(true);
   }
 
   function openEdit(item: BudgetItem) {
     setEditing(item);
+    setExpenseError(null);
     setForm({
       label: item.label,
       category: item.category ?? "Venue",
@@ -116,6 +119,7 @@ export default function BudgetPage() {
   async function saveExpense() {
     if (!wedding) return;
     setSavingExpense(true);
+    setExpenseError(null);
     const payload = {
       wedding_id: wedding.id,
       label: form.label,
@@ -126,13 +130,15 @@ export default function BudgetPage() {
       paid_date: form.paid_date || null,
       notes: form.notes || null,
     };
-    if (editing) {
-      await supabase.from("budget_items").update(payload).eq("id", editing.id);
-    } else {
-      await supabase.from("budget_items").insert(payload);
+    const { error } = editing
+      ? await supabase.from("budget_items").update(payload).eq("id", editing.id)
+      : await supabase.from("budget_items").insert(payload);
+    setSavingExpense(false);
+    if (error) {
+      setExpenseError(error.message);
+      return;
     }
     setExpenseOpen(false);
-    setSavingExpense(false);
     load();
   }
 
@@ -364,6 +370,7 @@ export default function BudgetPage() {
               <Label>Notes (optional)</Label>
               <Input placeholder="e.g. 50% due 3 months before" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
             </div>
+            {expenseError && <p className="text-sm text-red-600">{expenseError}</p>}
             <Button className="w-full" disabled={!form.label || !form.paid || !form.paid_date || savingExpense} onClick={saveExpense}>
               {savingExpense ? "Saving..." : editing ? "Save changes" : "Add expense"}
             </Button>
