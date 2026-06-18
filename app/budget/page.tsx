@@ -209,15 +209,15 @@ export default function BudgetPage() {
           ) : (
             <div className="mt-3 grid grid-cols-3 gap-2 text-center">
               <div>
-                <div className="text-lg font-semibold">{totalBudget > 0 ? formatPHP(totalBudget) : "—"}</div>
+                <div className="text-base sm:text-lg font-semibold break-words">{totalBudget > 0 ? formatPHP(totalBudget) : "—"}</div>
                 <div className="text-[10px] uppercase opacity-75">Total</div>
               </div>
               <div>
-                <div className="text-lg font-semibold">{formatPHP(totalPaid)}</div>
+                <div className="text-base sm:text-lg font-semibold break-words">{formatPHP(totalPaid)}</div>
                 <div className="text-[10px] uppercase opacity-75">Paid</div>
               </div>
               <div>
-                <div className={`text-lg font-semibold ${remaining < 0 ? "text-red-300" : ""}`}>
+                <div className={`text-base sm:text-lg font-semibold break-words ${remaining < 0 ? "text-red-300" : ""}`}>
                   {formatPHP(Math.abs(remaining))}
                 </div>
                 <div className="text-[10px] uppercase opacity-75">{remaining < 0 ? "Over budget" : "Remaining"}</div>
