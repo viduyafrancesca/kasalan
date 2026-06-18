@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
-import { formatPHP, daysUntil } from "@/lib/utils";
+import { daysUntil } from "@/lib/utils";
 import { monthLabel, MONTH_BUCKETS } from "@/lib/checklist/generateChecklist";
 
 export default async function ShareViewPage({ params }: { params: Promise<{ token: string }> }) {
@@ -21,12 +21,10 @@ export default async function ShareViewPage({ params }: { params: Promise<{ toke
   const [
     { data: wedding },
     { data: items },
-    { data: budgetItems },
     { data: guests },
   ] = await Promise.all([
     supabase.from("weddings").select("*").eq("id", weddingId).single(),
     supabase.from("checklist_items").select("*").eq("wedding_id", weddingId).order("months_before", { ascending: false }),
-    supabase.from("budget_items").select("estimated_amount, paid_amount").eq("wedding_id", weddingId),
     supabase.from("guests").select("rsvp_status").eq("wedding_id", weddingId),
   ]);
 
@@ -35,8 +33,7 @@ export default async function ShareViewPage({ params }: { params: Promise<{ toke
   const days = wedding.wedding_date ? daysUntil(wedding.wedding_date) : null;
   const allItems = items ?? [];
   const done = allItems.filter((i) => i.completed).length;
-  const totalBudget = Number(wedding.budget_total ?? 0);
-  const totalPaid = (budgetItems ?? []).reduce((s, b) => s + Number(b.paid_amount), 0);
+  const totalGuests = (guests ?? []).length;
   const attending = (guests ?? []).filter((g) => g.rsvp_status === "attending").length;
 
   const grouped = MONTH_BUCKETS.map((m) => ({
@@ -62,8 +59,8 @@ export default async function ShareViewPage({ params }: { params: Promise<{ toke
           <div className="text-[10px] text-muted-fg uppercase tracking-wide">Tasks</div>
         </div>
         <div className="bg-card rounded-xl border border-border p-3 text-center">
-          <div className="font-display text-xl text-accent">{totalBudget > 0 ? formatPHP(totalBudget - totalPaid) : "—"}</div>
-          <div className="text-[10px] text-muted-fg uppercase tracking-wide">Remaining</div>
+          <div className="font-display text-xl text-accent">{totalGuests}</div>
+          <div className="text-[10px] text-muted-fg uppercase tracking-wide">Total Guests</div>
         </div>
         <div className="bg-card rounded-xl border border-border p-3 text-center">
           <div className="font-display text-xl text-accent">{attending}</div>
