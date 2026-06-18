@@ -13,7 +13,8 @@ import { formatPHP } from "@/lib/utils";
 import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { type VendorCategory, CATEGORY_LABELS, CATEGORY_ORDER } from "@/lib/categories";
+import { type VendorCategory, CATEGORY_LABELS, getActiveCategories } from "@/lib/categories";
+import { EyeOff } from "lucide-react";
 
 type VendorStatus = "interested" | "shortlisted" | "booked" | "declined";
 
@@ -50,6 +51,7 @@ const EMPTY_FORM = {
 export default function VendorsPage() {
   const [weddingId, setWeddingId] = useState<string | null>(null);
   const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [hiddenCategories, setHiddenCategories] = useState<VendorCategory[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [open, setOpen] = useState(false);
@@ -65,12 +67,29 @@ export default function VendorsPage() {
     const w = await getWeddingForUser(supabase, user.id);
     if (!w) return;
     setWeddingId(w.id);
+    setHiddenCategories((w.hidden_vendor_categories ?? []) as VendorCategory[]);
     const { data } = await supabase.from("vendors").select("*").eq("wedding_id", w.id).order("created_at", { ascending: true });
     setVendors((data ?? []) as Vendor[]);
     setLoading(false);
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  async function hideCategory(cat: VendorCategory) {
+    if (!weddingId) return;
+    const inUse = vendors.some((v) => v.categories.includes(cat));
+    if (inUse) return;
+    const next = [...hiddenCategories, cat];
+    setHiddenCategories(next);
+    await supabase.from("weddings").update({ hidden_vendor_categories: next }).eq("id", weddingId);
+  }
+
+  async function restoreCategory(cat: VendorCategory) {
+    if (!weddingId) return;
+    const next = hiddenCategories.filter((c) => c !== cat);
+    setHiddenCategories(next);
+    await supabase.from("weddings").update({ hidden_vendor_categories: next }).eq("id", weddingId);
+  }
 
   function openAdd(defaultCategory?: VendorCategory) {
     setEditing(null);
@@ -125,12 +144,13 @@ export default function VendorsPage() {
   }
 
   const booked = vendors.filter((v) => v.status === "booked").length;
+  const activeCategories = getActiveCategories(hiddenCategories);
 
-  const grouped = CATEGORY_ORDER.map((cat) => ({
+  const grouped = activeCategories.map((cat) => ({
     cat,
     label: CATEGORY_LABELS[cat],
     items: vendors.filter((v) => v.categories.includes(cat)),
-  })).filter((g) => g.items.length > 0);
+  }));
 
   return (
     <div className="flex flex-col min-h-screen max-w-2xl mx-auto w-full">
@@ -149,47 +169,78 @@ export default function VendorsPage() {
         <div className="px-4 py-4">
           {loading ? (
             <p className="text-center text-muted-fg py-12 text-sm">Loading...</p>
-          ) : grouped.length === 0 ? (
+          ) : activeCategories.length === 0 ? (
             <p className="text-center text-muted-fg py-12 text-sm">
-              No vendors yet.{" "}
-              <button onClick={() => openAdd()} className="text-accent underline">Add your first vendor.</button>
+              All categories are hidden. Restore one below to add a vendor.
             </p>
           ) : (
             grouped.map(({ cat, label, items }) => (
               <div key={cat} className="mb-6">
                 <div className="flex items-center justify-between mb-2">
                   <h2 className="text-xs uppercase tracking-widest text-accent font-semibold">{label}</h2>
-                  <button onClick={() => openAdd(cat)} className="text-xs text-accent flex items-center gap-0.5 hover:underline">
-                    <Plus className="w-3 h-3" /> Add
-                  </button>
-                </div>
-                <div className="bg-card rounded-xl border border-border overflow-hidden">
-                  {items.map((vendor) => (
-                    <button
-                      key={vendor.id}
-                      onClick={() => openEdit(vendor)}
-                      className="w-full flex items-center gap-3 px-4 py-3 border-b border-border last:border-0 hover:bg-muted text-left transition-colors"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium">{vendor.name}</p>
-                        {vendor.contact && <p className="text-xs text-muted-fg">{vendor.contact}</p>}
-                        {(vendor.price_range_min || vendor.price_range_max) && (
-                          <p className="text-xs text-muted-fg">
-                            {vendor.price_range_min ? formatPHP(Number(vendor.price_range_min)) : ""}
-                            {vendor.price_range_min && vendor.price_range_max ? " – " : ""}
-                            {vendor.price_range_max ? formatPHP(Number(vendor.price_range_max)) : ""}
-                          </p>
-                        )}
-                        {vendor.notes && <p className="text-xs text-muted-fg italic truncate">{vendor.notes}</p>}
-                      </div>
-                      <Badge variant={STATUS_VARIANT[vendor.status]}>
-                        {STATUS_OPTIONS.find((s) => s.value === vendor.status)?.label}
-                      </Badge>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => openAdd(cat)} className="text-xs text-accent flex items-center gap-0.5 hover:underline">
+                      <Plus className="w-3 h-3" /> Add
                     </button>
-                  ))}
+                    <button
+                      onClick={() => hideCategory(cat)}
+                      disabled={items.length > 0}
+                      title={items.length > 0 ? "Retag or remove vendors in this category first" : "Hide this category"}
+                      className="text-muted-fg hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <EyeOff className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
+                {items.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-border py-4 text-center">
+                    <p className="text-xs text-muted-fg">No vendor added yet</p>
+                  </div>
+                ) : (
+                  <div className="bg-card rounded-xl border border-border overflow-hidden">
+                    {items.map((vendor) => (
+                      <button
+                        key={vendor.id}
+                        onClick={() => openEdit(vendor)}
+                        className="w-full flex items-center gap-3 px-4 py-3 border-b border-border last:border-0 hover:bg-muted text-left transition-colors"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium">{vendor.name}</p>
+                          {vendor.contact && <p className="text-xs text-muted-fg">{vendor.contact}</p>}
+                          {(vendor.price_range_min || vendor.price_range_max) && (
+                            <p className="text-xs text-muted-fg">
+                              {vendor.price_range_min ? formatPHP(Number(vendor.price_range_min)) : ""}
+                              {vendor.price_range_min && vendor.price_range_max ? " – " : ""}
+                              {vendor.price_range_max ? formatPHP(Number(vendor.price_range_max)) : ""}
+                            </p>
+                          )}
+                          {vendor.notes && <p className="text-xs text-muted-fg italic truncate">{vendor.notes}</p>}
+                        </div>
+                        <Badge variant={STATUS_VARIANT[vendor.status]}>
+                          {STATUS_OPTIONS.find((s) => s.value === vendor.status)?.label}
+                        </Badge>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             ))
+          )}
+          {!loading && hiddenCategories.length > 0 && (
+            <div className="mt-2">
+              <h2 className="text-xs uppercase tracking-widest text-muted-fg font-semibold mb-2">Hidden categories</h2>
+              <div className="flex flex-wrap gap-2">
+                {hiddenCategories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => restoreCategory(cat)}
+                    className="flex items-center gap-1 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-fg hover:bg-muted transition-colors"
+                  >
+                    <Plus className="w-3 h-3" /> {CATEGORY_LABELS[cat]}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -213,7 +264,7 @@ export default function VendorsPage() {
             <div className="space-y-1.5">
               <Label>Categories</Label>
               <div className="grid grid-cols-3 gap-2">
-                {CATEGORY_ORDER.map((c) => {
+                {activeCategories.map((c) => {
                   const selected = form.categories.includes(c);
                   return (
                     <button
