@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { formatPHP } from "@/lib/utils";
 import { Plus, Pencil } from "lucide-react";
 import { type VendorCategory, CATEGORY_LABELS, CATEGORY_ORDER, getActiveCategories } from "@/lib/categories";
+import { computeBudgetTotals } from "@/lib/budget";
 import { cn } from "@/lib/utils";
 
 type BudgetItem = {
@@ -24,7 +25,7 @@ type BudgetItem = {
   notes: string | null;
 };
 
-type VendorRef = { id: string; name: string; categories: VendorCategory[]; price_range_max: string | null };
+type VendorRef = { id: string; name: string; categories: VendorCategory[]; price_range_max: string | null; status: string };
 
 function todayStr(): string {
   return new Date().toISOString().slice(0, 10);
@@ -68,7 +69,7 @@ export default function BudgetPage() {
 
     const { data: vendorRows } = await supabase
       .from("vendors")
-      .select("id, name, categories, price_range_max")
+      .select("id, name, categories, price_range_max, status")
       .eq("wedding_id", w.id)
       .order("name");
 
@@ -80,9 +81,7 @@ export default function BudgetPage() {
   useEffect(() => { load(); }, [load]);
 
   const totalBudget = Number(wedding?.budget_total ?? 0);
-  const totalPaid = items.reduce((s, i) => s + Number(i.paid_amount), 0);
-  const totalEstimated = items.reduce((s, i) => s + Number(i.estimated_amount), 0);
-  const remaining = totalBudget > 0 ? totalBudget - totalPaid : totalEstimated - totalPaid;
+  const budgetTotals = computeBudgetTotals(items, vendors, totalBudget);
   const activeCategories = getActiveCategories(wedding?.hidden_vendor_categories ?? []);
 
   async function saveBudget() {
@@ -214,20 +213,24 @@ export default function BudgetPage() {
           {loading ? (
             <div className="mt-3 h-12 opacity-50 text-sm">Loading...</div>
           ) : (
-            <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+            <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
               <div>
                 <div className="text-base sm:text-lg font-semibold break-words">{totalBudget > 0 ? formatPHP(totalBudget) : "—"}</div>
                 <div className="text-[10px] uppercase opacity-75">Total</div>
               </div>
               <div>
-                <div className="text-base sm:text-lg font-semibold break-words">{formatPHP(totalPaid)}</div>
+                <div className="text-base sm:text-lg font-semibold break-words">{formatPHP(budgetTotals.paid)}</div>
                 <div className="text-[10px] uppercase opacity-75">Paid</div>
               </div>
               <div>
-                <div className={`text-base sm:text-lg font-semibold break-words ${remaining < 0 ? "text-red-300" : ""}`}>
-                  {formatPHP(Math.abs(remaining))}
+                <div className="text-base sm:text-lg font-semibold break-words">{formatPHP(budgetTotals.outstanding)}</div>
+                <div className="text-[10px] uppercase opacity-75">Outstanding</div>
+              </div>
+              <div>
+                <div className={`text-base sm:text-lg font-semibold break-words ${totalBudget > 0 && budgetTotals.remaining < 0 ? "text-red-300" : ""}`}>
+                  {totalBudget > 0 ? formatPHP(Math.abs(budgetTotals.remaining)) : "—"}
                 </div>
-                <div className="text-[10px] uppercase opacity-75">{remaining < 0 ? "Over budget" : "Remaining"}</div>
+                <div className="text-[10px] uppercase opacity-75">{totalBudget > 0 && budgetTotals.remaining < 0 ? "Over budget" : "Remaining"}</div>
               </div>
             </div>
           )}
