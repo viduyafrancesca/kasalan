@@ -29,15 +29,16 @@ export const sponsorRoleEnum = pgEnum("sponsor_role", [
 // ─── Tables ──────────────────────────────────────────────────────────────────
 
 export const weddings = pgTable("weddings", {
-  id:               uuid("id").primaryKey().defaultRandom(),
-  ownerId:          uuid("owner_id").notNull(),
-  coupleName1:      text("couple_name_1").notNull(),
-  coupleName2:      text("couple_name_2").notNull(),
-  weddingDate:      date("wedding_date"),
-  ceremonyVenue:    text("ceremony_venue"),
-  receptionVenue:   text("reception_venue"),
-  budgetTotal:      numeric("budget_total", { precision: 12, scale: 2 }),
-  createdAt:        timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  id:                     uuid("id").primaryKey().defaultRandom(),
+  ownerId:                uuid("owner_id").notNull(),
+  coupleName1:            text("couple_name_1").notNull(),
+  coupleName2:            text("couple_name_2").notNull(),
+  weddingDate:            date("wedding_date"),
+  ceremonyVenue:          text("ceremony_venue"),
+  receptionVenue:         text("reception_venue"),
+  budgetTotal:            numeric("budget_total", { precision: 12, scale: 2 }),
+  hiddenVendorCategories: vendorCategoryEnum("hidden_vendor_categories").array().notNull().default([]),
+  createdAt:              timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const weddingSetup = pgTable("wedding_setup", {

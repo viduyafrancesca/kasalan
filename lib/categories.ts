@@ -20,3 +20,7 @@ export const CATEGORY_LABELS: Record<VendorCategory, string> = {
 };
 
 export const CATEGORY_ORDER = Object.keys(CATEGORY_LABELS) as VendorCategory[];
+
+export function getActiveCategories(hidden: VendorCategory[]): VendorCategory[] {
+  return CATEGORY_ORDER.filter((c) => !hidden.includes(c));
+}
