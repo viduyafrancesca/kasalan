@@ -10,6 +10,7 @@ import {
   buildPaymentReminder, buildRsvpReminder, buildEntourageReminder, buildVendorGapReminder,
 } from "@/lib/dashboardReminders";
 import { type VendorCategory, getActiveCategories } from "@/lib/categories";
+import { type BudgetItemLike, type VendorStatusLike, computeBudgetTotals } from "@/lib/budget";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -34,7 +35,7 @@ export default async function DashboardPage() {
   ] = await Promise.all([
     supabase.from("checklist_items").select("*", { count: "exact", head: true }).eq("wedding_id", wedding.id),
     supabase.from("checklist_items").select("*", { count: "exact", head: true }).eq("wedding_id", wedding.id).eq("completed", true),
-    supabase.from("budget_items").select("estimated_amount, paid_amount").eq("wedding_id", wedding.id),
+    supabase.from("budget_items").select("estimated_amount, paid_amount, vendor_id").eq("wedding_id", wedding.id),
     supabase.from("budget_items").select("label, due_date, estimated_amount, paid_amount, vendor_id").eq("wedding_id", wedding.id).not("due_date", "is", null),
     supabase.from("guests").select("*", { count: "exact", head: true }).eq("wedding_id", wedding.id).eq("rsvp_status", "attending"),
     supabase.from("guests").select("*", { count: "exact", head: true }).eq("wedding_id", wedding.id).eq("rsvp_status", "pending"),
@@ -51,8 +52,11 @@ export default async function DashboardPage() {
   ]);
 
   const totalBudget = Number(wedding.budget_total ?? 0);
-  const totalSpent  = (budgetItems ?? []).reduce((s, b) => s + Number(b.paid_amount ?? 0), 0);
-  const remaining   = totalBudget - totalSpent;
+  const budgetTotals = computeBudgetTotals(
+    (budgetItems ?? []) as BudgetItemLike[],
+    (vendors ?? []) as VendorStatusLike[],
+    totalBudget
+  );
 
   const activeCategories = getActiveCategories((wedding.hidden_vendor_categories ?? []) as VendorCategory[]);
 
@@ -75,7 +79,7 @@ export default async function DashboardPage() {
       <div className="px-4 lg:px-6 py-4 lg:py-6 space-y-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StatCard value={`${doneTasks ?? 0}/${totalTasks ?? 0}`} label="Tasks Done" />
-          <StatCard value={totalBudget > 0 ? formatPHP(remaining) : "—"} label="Budget Left" />
+          <StatCard value={totalBudget > 0 ? formatPHP(budgetTotals.remaining) : "—"} label="Budget Left" />
           <StatCard value={attendingGuests ?? 0} label="RSVPs" />
           <StatCard value={(totalGuests ?? 0) + (totalSponsors ?? 0)} label="Total Guests" />
         </div>
