@@ -27,7 +27,6 @@ export default async function DashboardPage() {
     { count: attendingGuests },
     { count: pendingGuests },
     { count: totalGuests },
-    { count: confirmedSponsors },
     { count: totalSponsors },
     { data: unconfirmedSponsors },
     { data: vendors },
@@ -40,7 +39,6 @@ export default async function DashboardPage() {
     supabase.from("guests").select("*", { count: "exact", head: true }).eq("wedding_id", wedding.id).eq("rsvp_status", "attending"),
     supabase.from("guests").select("*", { count: "exact", head: true }).eq("wedding_id", wedding.id).eq("rsvp_status", "pending"),
     supabase.from("guests").select("*", { count: "exact", head: true }).eq("wedding_id", wedding.id),
-    supabase.from("sponsors").select("*", { count: "exact", head: true }).eq("wedding_id", wedding.id).eq("confirmed", true),
     supabase.from("sponsors").select("*", { count: "exact", head: true }).eq("wedding_id", wedding.id),
     supabase.from("sponsors").select("name").eq("wedding_id", wedding.id).eq("confirmed", false),
     supabase.from("vendors").select("id, name, categories, status").eq("wedding_id", wedding.id),
@@ -75,12 +73,11 @@ export default async function DashboardPage() {
       />
 
       <div className="px-4 lg:px-6 py-4 lg:py-6 space-y-6">
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StatCard value={`${doneTasks ?? 0}/${totalTasks ?? 0}`} label="Tasks Done" />
           <StatCard value={totalBudget > 0 ? formatPHP(remaining) : "—"} label="Budget Left" />
           <StatCard value={attendingGuests ?? 0} label="RSVPs" />
           <StatCard value={(totalGuests ?? 0) + (totalSponsors ?? 0)} label="Total Guests" />
-          <StatCard value={confirmedSponsors ?? 0} label="Sponsors" />
         </div>
 
         {reminders.length > 0 && (
