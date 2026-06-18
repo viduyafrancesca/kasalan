@@ -1,4 +1,4 @@
-import { type VendorCategory, CATEGORY_LABELS, CATEGORY_ORDER } from "@/lib/categories";
+import { type VendorCategory, CATEGORY_LABELS } from "@/lib/categories";
 import { formatPHP } from "@/lib/utils";
 
 export type Reminder = { key: string; text: string; href: string };
@@ -76,8 +76,8 @@ export function buildEntourageReminder(names: string[]): Reminder | null {
   };
 }
 
-export function buildVendorGapReminder(vendors: VendorRow[]): Reminder | null {
-  const gaps = CATEGORY_ORDER.filter(
+export function buildVendorGapReminder(vendors: VendorRow[], activeCategories: VendorCategory[]): Reminder | null {
+  const gaps = activeCategories.filter(
     (cat) => !vendors.some((v) => v.categories.includes(cat) && v.status === "booked")
   );
   if (gaps.length === 0) return null;

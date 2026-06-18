@@ -9,6 +9,7 @@ import {
   type Reminder, type DueBudgetRow, type VendorRow,
   buildPaymentReminder, buildRsvpReminder, buildEntourageReminder, buildVendorGapReminder,
 } from "@/lib/dashboardReminders";
+import { type VendorCategory, getActiveCategories } from "@/lib/categories";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -55,11 +56,13 @@ export default async function DashboardPage() {
   const totalSpent  = (budgetItems ?? []).reduce((s, b) => s + Number(b.paid_amount ?? 0), 0);
   const remaining   = totalBudget - totalSpent;
 
+  const activeCategories = getActiveCategories((wedding.hidden_vendor_categories ?? []) as VendorCategory[]);
+
   const reminders = [
     buildPaymentReminder((dueBudgetItems ?? []) as DueBudgetRow[], (vendors ?? []) as VendorRow[]),
     buildRsvpReminder(pendingGuests ?? 0),
     buildEntourageReminder((unconfirmedSponsors ?? []).map((s) => s.name)),
-    buildVendorGapReminder((vendors ?? []) as VendorRow[]),
+    buildVendorGapReminder((vendors ?? []) as VendorRow[], activeCategories),
   ].filter((r): r is Reminder => r !== null);
 
   return (
