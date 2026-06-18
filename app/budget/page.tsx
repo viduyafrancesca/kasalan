@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { formatPHP } from "@/lib/utils";
 import { Plus, Pencil } from "lucide-react";
-import { type VendorCategory, CATEGORY_LABELS, CATEGORY_ORDER } from "@/lib/categories";
+import { type VendorCategory, CATEGORY_LABELS, CATEGORY_ORDER, getActiveCategories } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 
 type BudgetItem = {
@@ -30,7 +30,7 @@ function todayStr(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-type Wedding = { id: string; budget_total: string | null };
+type Wedding = { id: string; budget_total: string | null; hidden_vendor_categories: VendorCategory[] | null };
 
 export default function BudgetPage() {
   const [wedding, setWedding] = useState<Wedding | null>(null);
@@ -82,6 +82,7 @@ export default function BudgetPage() {
   const totalPaid = items.reduce((s, i) => s + Number(i.paid_amount), 0);
   const totalEstimated = items.reduce((s, i) => s + Number(i.estimated_amount), 0);
   const remaining = totalBudget > 0 ? totalBudget - totalPaid : totalEstimated - totalPaid;
+  const activeCategories = getActiveCategories(wedding?.hidden_vendor_categories ?? []);
 
   async function saveBudget() {
     if (!wedding) return;
@@ -341,7 +342,7 @@ export default function BudgetPage() {
                   value={form.category}
                   onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
                 >
-                  {CATEGORY_ORDER.map((c) => <option key={c} value={CATEGORY_LABELS[c]}>{CATEGORY_LABELS[c]}</option>)}
+                  {activeCategories.map((c) => <option key={c} value={CATEGORY_LABELS[c]}>{CATEGORY_LABELS[c]}</option>)}
                 </select>
               </div>
             )}
