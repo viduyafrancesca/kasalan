@@ -26,10 +26,6 @@ export const sponsorRoleEnum = pgEnum("sponsor_role", [
   "principal", "cord", "veil", "arrhae", "candle", "best_man", "maid_of_honor", "bridesmaid", "groomsman",
 ]);
 
-export const guestSideEnum = pgEnum("guest_side", [
-  "partner1_family", "partner1_friend", "partner2_family", "partner2_friend", "mutual_friend",
-]);
-
 // ─── Tables ──────────────────────────────────────────────────────────────────
 
 export const weddings = pgTable("weddings", {
@@ -54,6 +50,15 @@ export const weddingSetup = pgTable("wedding_setup", {
   hasCivilRegistration:  boolean("has_civil_registration").notNull().default(true),
   hasSecondarySponsors:  boolean("has_secondary_sponsors").notNull().default(true),
   entourageSize:         smallint("entourage_size").default(10),
+});
+
+export const weddingSides = pgTable("wedding_sides", {
+  id:        uuid("id").primaryKey().defaultRandom(),
+  weddingId: uuid("wedding_id").notNull().references(() => weddings.id, { onDelete: "cascade" }),
+  kind:      text("kind"),
+  label:     text("label"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const checklistTemplates = pgTable("checklist_templates", {
@@ -109,7 +114,7 @@ export const guests = pgTable("guests", {
   tableNumber: smallint("table_number"),
   plusOne:     boolean("plus_one").notNull().default(false),
   notes:       text("notes"),
-  side:        guestSideEnum("side"),
+  side:        uuid("side").references(() => weddingSides.id, { onDelete: "restrict" }),
   createdAt:   timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -135,7 +140,7 @@ export const sponsors = pgTable("sponsors", {
   role:      sponsorRoleEnum("role").notNull().default("principal"),
   confirmed: boolean("confirmed").notNull().default(false),
   notes:     text("notes"),
-  side:      guestSideEnum("side"),
+  side:      uuid("side").references(() => weddingSides.id, { onDelete: "restrict" }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -164,6 +169,7 @@ export type ChecklistTemplate = typeof checklistTemplates.$inferSelect;
 export type ChecklistItem = typeof checklistItems.$inferSelect;
 export type BudgetItem = typeof budgetItems.$inferSelect;
 export type Guest = typeof guests.$inferSelect;
+export type WeddingSideRow = typeof weddingSides.$inferSelect;
 export type Vendor = typeof vendors.$inferSelect;
 export type Sponsor = typeof sponsors.$inferSelect;
 export type Collaborator = typeof collaborators.$inferSelect;
