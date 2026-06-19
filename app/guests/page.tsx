@@ -13,14 +13,11 @@ import { Plus, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { countAttendingPlusOnes } from "@/lib/guests";
 import { type SponsorRole, ROLE_ORDER, ROLE_LABELS } from "@/lib/sponsorRoles";
+import { type WeddingSide, findSideLabel } from "@/lib/sides";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type RsvpStatus = "pending" | "attending" | "declined";
-type GuestSide =
-  | "partner1_family" | "partner1_friend"
-  | "partner2_family" | "partner2_friend"
-  | "mutual_friend";
 
 type Guest = {
   kind: "guest";
@@ -33,7 +30,7 @@ type Guest = {
   table_number: number | null;
   plus_one: boolean;
   notes: string | null;
-  side: GuestSide | null;
+  side: string | null;
 };
 
 type Sponsor = {
@@ -45,7 +42,7 @@ type Sponsor = {
   phone: string | null;
   email: string | null;
   notes: string | null;
-  side: GuestSide | null;
+  side: string | null;
 };
 
 type Person = Guest | Sponsor;
@@ -64,30 +61,15 @@ const RSVP_OPTIONS: { value: RsvpStatus; label: string }[] = [
   { value: "declined",  label: "Declined" },
 ];
 
-const SIDE_ORDER: (GuestSide | null)[] = [
-  null, "partner1_family", "partner1_friend", "partner2_family", "partner2_friend", "mutual_friend",
-];
-
-function getSideLabel(side: GuestSide | null, coupleNames: { name1: string; name2: string }): string {
-  switch (side) {
-    case "partner1_family": return `${coupleNames.name1}'s Family`;
-    case "partner1_friend":  return `${coupleNames.name1}'s Friend`;
-    case "partner2_family": return `${coupleNames.name2}'s Family`;
-    case "partner2_friend":  return `${coupleNames.name2}'s Friend`;
-    case "mutual_friend":    return "Mutual Friend";
-    default:                 return "Unspecified";
-  }
-}
-
 const EMPTY_GUEST = {
   name: "", email: "", phone: "", rsvp_status: "pending" as RsvpStatus,
   meal_choice: "", table_number: "", plus_one: false, notes: "",
-  side: null as GuestSide | null,
+  side: null as string | null,
 };
 
 const EMPTY_SPONSOR = {
   name: "", role: "principal" as SponsorRole, confirmed: false, phone: "", email: "", notes: "",
-  side: null as GuestSide | null,
+  side: null as string | null,
 };
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -99,6 +81,7 @@ export default function GuestsPage() {
   const [coupleNames, setCoupleNames] = useState({ name1: "Partner 1", name2: "Partner 2" });
   const [guests, setGuests] = useState<Guest[]>([]);
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
+  const [sides, setSides] = useState<WeddingSide[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -121,7 +104,7 @@ export default function GuestsPage() {
   const [showMoveToGuest, setShowMoveToGuest] = useState(false);
 
   const [filterOpen, setFilterOpen] = useState(false);
-  const [sideFilters, setSideFilters] = useState<(GuestSide | null)[]>([]);
+  const [sideFilters, setSideFilters] = useState<(string | null)[]>([]);
   const [roleFilters, setRoleFilters] = useState<SponsorRole[]>([]);
   const [statusFilters, setStatusFilters] = useState<RsvpStatus[]>([]);
 
@@ -134,12 +117,14 @@ export default function GuestsPage() {
     if (!w) return;
     setWeddingId(w.id);
     setCoupleNames({ name1: w.couple_name_1, name2: w.couple_name_2 });
-    const [{ data: g }, { data: s }] = await Promise.all([
+    const [{ data: g }, { data: s }, { data: sd }] = await Promise.all([
       supabase.from("guests").select("*").eq("wedding_id", w.id).order("name"),
       supabase.from("sponsors").select("*").eq("wedding_id", w.id).order("name"),
+      supabase.from("wedding_sides").select("*").eq("wedding_id", w.id).order("sort_order"),
     ]);
     setGuests((g ?? []).map((r) => ({ ...r, kind: "guest" as const })));
     setSponsors((s ?? []).map((r) => ({ ...r, kind: "sponsor" as const })));
+    setSides(sd ?? []);
     setLoading(false);
   }, []);
 
@@ -354,7 +339,7 @@ export default function GuestsPage() {
     .filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  function toggleSideFilter(value: GuestSide | null) {
+  function toggleSideFilter(value: string | null) {
     setSideFilters((prev) => prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]);
   }
 
@@ -462,7 +447,7 @@ export default function GuestsPage() {
                       </p>
                       {person.meal_choice && <p className="text-xs text-muted-fg">{person.meal_choice}</p>}
                       {person.table_number && <p className="text-xs text-muted-fg">Table {person.table_number}</p>}
-                      {person.side && <p className="text-xs text-muted-fg">{getSideLabel(person.side, coupleNames)}</p>}
+                      {person.side && <p className="text-xs text-muted-fg">{findSideLabel(person.side, sides, coupleNames)}</p>}
                     </div>
                     <Badge variant={RSVP_VARIANT[person.rsvp_status]}>{person.rsvp_status}</Badge>
                   </button>
@@ -481,7 +466,7 @@ export default function GuestsPage() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium leading-tight">{person.name}</p>
                       {person.phone && <p className="text-xs text-muted-fg">{person.phone}</p>}
-                      {person.side && <p className="text-xs text-muted-fg">{getSideLabel(person.side, coupleNames)}</p>}
+                      {person.side && <p className="text-xs text-muted-fg">{findSideLabel(person.side, sides, coupleNames)}</p>}
                     </div>
                     <Badge variant="default">{ROLE_LABELS[person.role]}</Badge>
                   </button>
@@ -561,7 +546,7 @@ export default function GuestsPage() {
             <div className="space-y-1.5">
               <Label>Side</Label>
               <div className="grid grid-cols-2 gap-2">
-                {SIDE_ORDER.map((sideOption) => (
+                {[null, ...sides.map((s) => s.id)].map((sideOption) => (
                   <button
                     key={sideOption ?? "unspecified"}
                     onClick={() => setGuestForm((f) => ({ ...f, side: sideOption }))}
@@ -572,7 +557,7 @@ export default function GuestsPage() {
                         : "border-border bg-card text-muted-fg hover:bg-muted"
                     )}
                   >
-                    {getSideLabel(sideOption, coupleNames)}
+                    {findSideLabel(sideOption, sides, coupleNames)}
                   </button>
                 ))}
               </div>
@@ -664,7 +649,7 @@ export default function GuestsPage() {
             <div className="space-y-1.5">
               <Label>Side</Label>
               <div className="grid grid-cols-2 gap-2">
-                {SIDE_ORDER.map((sideOption) => (
+                {[null, ...sides.map((s) => s.id)].map((sideOption) => (
                   <button
                     key={sideOption ?? "unspecified"}
                     onClick={() => setSponsorForm((f) => ({ ...f, side: sideOption }))}
@@ -675,7 +660,7 @@ export default function GuestsPage() {
                         : "border-border bg-card text-muted-fg hover:bg-muted"
                     )}
                   >
-                    {getSideLabel(sideOption, coupleNames)}
+                    {findSideLabel(sideOption, sides, coupleNames)}
                   </button>
                 ))}
               </div>
@@ -753,7 +738,7 @@ export default function GuestsPage() {
             <div className="space-y-1.5">
               <Label>Side</Label>
               <div className="grid grid-cols-2 gap-2">
-                {SIDE_ORDER.map((sideOption) => (
+                {[null, ...sides.map((s) => s.id)].map((sideOption) => (
                   <button
                     key={sideOption ?? "unspecified"}
                     onClick={() => toggleSideFilter(sideOption)}
@@ -764,7 +749,7 @@ export default function GuestsPage() {
                         : "border-border bg-card text-muted-fg hover:bg-muted"
                     )}
                   >
-                    {getSideLabel(sideOption, coupleNames)}
+                    {findSideLabel(sideOption, sides, coupleNames)}
                   </button>
                 ))}
               </div>
