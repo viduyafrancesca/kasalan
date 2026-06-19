@@ -3,6 +3,23 @@ import { notFound } from "next/navigation";
 import { daysUntil } from "@/lib/utils";
 import { monthLabel, MONTH_BUCKETS } from "@/lib/checklist/generateChecklist";
 import { type GuestRsvpLike, countAttendingPlusOnes } from "@/lib/guests";
+import { type SponsorRole, ROLE_LABELS } from "@/lib/sponsorRoles";
+import { Badge } from "@/components/ui/badge";
+
+type PersonStatus = "attending" | "pending" | "declined";
+
+type PersonRow = {
+  id: string;
+  name: string;
+  roleLabel: string;
+  status: PersonStatus;
+};
+
+const STATUS_VARIANT: Record<PersonStatus, "success" | "destructive" | "secondary"> = {
+  attending: "success",
+  declined:  "destructive",
+  pending:   "secondary",
+};
 
 export default async function ShareViewPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -23,10 +40,12 @@ export default async function ShareViewPage({ params }: { params: Promise<{ toke
     { data: wedding },
     { data: items },
     { data: guests },
+    { data: sponsors },
   ] = await Promise.all([
     supabase.from("weddings").select("*").eq("id", weddingId).single(),
     supabase.from("checklist_items").select("*").eq("wedding_id", weddingId).order("months_before", { ascending: false }),
-    supabase.from("guests").select("rsvp_status, plus_one").eq("wedding_id", weddingId),
+    supabase.from("guests").select("id, name, rsvp_status, plus_one").eq("wedding_id", weddingId),
+    supabase.from("sponsors").select("id, name, role, confirmed").eq("wedding_id", weddingId),
   ]);
 
   if (!wedding) notFound();
@@ -36,6 +55,22 @@ export default async function ShareViewPage({ params }: { params: Promise<{ toke
   const done = allItems.filter((i) => i.completed).length;
   const totalGuests = (guests ?? []).length + countAttendingPlusOnes((guests ?? []) as GuestRsvpLike[]);
   const attending = (guests ?? []).filter((g) => g.rsvp_status === "attending").length;
+
+  const guestRows: PersonRow[] = (guests ?? []).map((g) => ({
+    id: g.id,
+    name: g.name,
+    roleLabel: "Guest",
+    status: g.rsvp_status as PersonStatus,
+  }));
+
+  const sponsorRows: PersonRow[] = (sponsors ?? []).map((s) => ({
+    id: s.id,
+    name: s.name,
+    roleLabel: ROLE_LABELS[s.role as SponsorRole],
+    status: s.confirmed ? "attending" : "pending",
+  }));
+
+  const people = [...guestRows, ...sponsorRows].sort((a, b) => a.name.localeCompare(b.name));
 
   const grouped = MONTH_BUCKETS.map((m) => ({
     label: monthLabel(m),
@@ -67,6 +102,26 @@ export default async function ShareViewPage({ params }: { params: Promise<{ toke
           <div className="font-display text-xl text-accent">{attending}</div>
           <div className="text-[10px] text-muted-fg uppercase tracking-wide">RSVPs</div>
         </div>
+      </div>
+
+      <div className="px-4 pb-6">
+        <div className="flex items-baseline justify-between mb-3">
+          <h2 className="font-display text-lg">Guests &amp; Entourage</h2>
+          <span className="text-xs text-muted-fg">{people.length}</span>
+        </div>
+        {people.length === 0 ? (
+          <p className="text-sm text-muted-fg">No guests added yet.</p>
+        ) : (
+          <div className="bg-card rounded-xl border border-border overflow-hidden">
+            {people.map((person) => (
+              <div key={person.id} className="flex items-center gap-3 px-4 py-2.5 border-b border-border last:border-0">
+                <span className="text-sm flex-1 min-w-0 truncate">{person.name}</span>
+                <span className="text-xs text-muted-fg w-20 flex-shrink-0 truncate">{person.roleLabel}</span>
+                <Badge variant={STATUS_VARIANT[person.status]}>{person.status}</Badge>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="px-4 pb-8">
