@@ -109,6 +109,10 @@ export default function GuestsPage() {
   const [sponsorForm, setSponsorForm] = useState(EMPTY_SPONSOR);
   const [savingSponsor, setSavingSponsor] = useState(false);
 
+  const [showMoveToSponsor, setShowMoveToSponsor] = useState(false);
+  const [moveRole, setMoveRole] = useState<SponsorRole>("principal");
+  const [moveError, setMoveError] = useState<string | null>(null);
+
   const supabase = createClient();
 
   const load = useCallback(async () => {
@@ -133,6 +137,9 @@ export default function GuestsPage() {
   function openAddGuest() {
     setEditingGuest(null);
     setGuestForm(EMPTY_GUEST);
+    setShowMoveToSponsor(false);
+    setMoveRole("principal");
+    setMoveError(null);
     setGuestOpen(true);
   }
 
@@ -144,6 +151,9 @@ export default function GuestsPage() {
       table_number: g.table_number != null ? String(g.table_number) : "",
       plus_one: g.plus_one, notes: g.notes ?? "",
     });
+    setShowMoveToSponsor(false);
+    setMoveRole("principal");
+    setMoveError(null);
     setGuestOpen(true);
   }
 
@@ -176,6 +186,37 @@ export default function GuestsPage() {
     setSavingGuest(true);
     await supabase.from("guests").delete().eq("id", editingGuest.id);
     setGuestOpen(false);
+    setSavingGuest(false);
+    load();
+  }
+
+  async function moveGuestToSponsor() {
+    if (!weddingId || !editingGuest) return;
+    setSavingGuest(true);
+    setMoveError(null);
+    const payload = {
+      wedding_id: weddingId,
+      name: guestForm.name.trim(),
+      role: moveRole,
+      confirmed: guestForm.rsvp_status === "attending",
+      phone: guestForm.phone || null,
+      email: guestForm.email || null,
+      notes: guestForm.notes || null,
+    };
+    const { error: insertError } = await supabase.from("sponsors").insert(payload);
+    if (insertError) {
+      setMoveError(insertError.message);
+      setSavingGuest(false);
+      return;
+    }
+    const { error: deleteError } = await supabase.from("guests").delete().eq("id", editingGuest.id);
+    if (deleteError) {
+      setMoveError(deleteError.message);
+      setSavingGuest(false);
+      return;
+    }
+    setGuestOpen(false);
+    setShowMoveToSponsor(false);
     setSavingGuest(false);
     load();
   }
@@ -422,11 +463,55 @@ export default function GuestsPage() {
               <Label>Notes</Label>
               <Input placeholder="e.g. Vegetarian, wheelchair access" value={guestForm.notes} onChange={(e) => setGuestForm((f) => ({ ...f, notes: e.target.value }))} />
             </div>
-            <Button className="w-full" disabled={!guestForm.name.trim() || savingGuest} onClick={saveGuest}>
-              {savingGuest ? "Saving..." : editingGuest ? "Save changes" : "Add guest"}
-            </Button>
-            {editingGuest && (
-              <Button variant="destructive" className="w-full" disabled={savingGuest} onClick={deleteGuest}>Delete</Button>
+            {showMoveToSponsor ? (
+              <div className="space-y-3 rounded-xl border border-accent bg-terra-100 p-3">
+                <p className="text-sm font-medium">Pick their entourage role</p>
+                <div className="grid grid-cols-4 gap-2">
+                  {ROLE_ORDER.map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => setMoveRole(r)}
+                      className={cn(
+                        "rounded-lg border py-2 text-xs font-medium transition-colors",
+                        moveRole === r
+                          ? "border-accent bg-accent text-accent-fg"
+                          : "border-border bg-card text-muted-fg hover:bg-muted"
+                      )}
+                    >
+                      {ROLE_LABELS[r]}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-fg">Table number and meal choice won&apos;t carry over.</p>
+                {moveError && <p className="text-sm text-red-600">{moveError}</p>}
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    disabled={savingGuest}
+                    onClick={() => { setShowMoveToSponsor(false); setMoveError(null); }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button className="flex-1" disabled={savingGuest} onClick={moveGuestToSponsor}>
+                    {savingGuest ? "Moving..." : "Confirm move"}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <Button className="w-full" disabled={!guestForm.name.trim() || savingGuest} onClick={saveGuest}>
+                  {savingGuest ? "Saving..." : editingGuest ? "Save changes" : "Add guest"}
+                </Button>
+                {editingGuest && (
+                  <>
+                    <Button variant="outline" className="w-full" disabled={savingGuest} onClick={() => setShowMoveToSponsor(true)}>
+                      Move to Entourage
+                    </Button>
+                    <Button variant="destructive" className="w-full" disabled={savingGuest} onClick={deleteGuest}>Delete</Button>
+                  </>
+                )}
+              </>
             )}
           </div>
         </DialogContent>
