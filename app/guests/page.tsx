@@ -120,6 +120,11 @@ export default function GuestsPage() {
   const [moveError, setMoveError] = useState<string | null>(null);
   const [showMoveToGuest, setShowMoveToGuest] = useState(false);
 
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [sideFilters, setSideFilters] = useState<(GuestSide | null)[]>([]);
+  const [roleFilters, setRoleFilters] = useState<SponsorRole[]>([]);
+  const [statusFilters, setStatusFilters] = useState<RsvpStatus[]>([]);
+
   const supabase = createClient();
 
   const load = useCallback(async () => {
@@ -328,14 +333,34 @@ export default function GuestsPage() {
 
   const allPeople: Person[] = [...guests, ...sponsors];
 
+  const activeFilterCount = sideFilters.length + roleFilters.length + statusFilters.length;
+
   const visible = allPeople
     .filter((p) => {
       if (filter === "guests")    return p.kind === "guest";
       if (filter === "entourage") return p.kind === "sponsor";
       return true;
     })
+    .filter((p) => {
+      const sideOk = sideFilters.length === 0 || sideFilters.includes(p.side);
+      const roleOk = roleFilters.length === 0 || (p.kind === "sponsor" && roleFilters.includes(p.role));
+      const statusOk = statusFilters.length === 0 || (p.kind === "guest" && statusFilters.includes(p.rsvp_status));
+      return sideOk && roleOk && statusOk;
+    })
     .filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => a.name.localeCompare(b.name));
+
+  function toggleSideFilter(value: GuestSide | null) {
+    setSideFilters((prev) => prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]);
+  }
+
+  function toggleRoleFilter(value: SponsorRole) {
+    setRoleFilters((prev) => prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]);
+  }
+
+  function toggleStatusFilter(value: RsvpStatus) {
+    setStatusFilters((prev) => prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]);
+  }
 
   function handleFab() {
     if (filter === "entourage") openAddSponsor();
