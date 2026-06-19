@@ -417,6 +417,11 @@ export default function GuestsPage() {
 
         {/* List */}
         <div className="px-4 py-4">
+          {!loading && visible.length > 0 && (search.trim() !== "" || activeFilterCount > 0) && (
+            <p className="text-xs text-muted-fg mb-2">
+              {visible.length} {visible.length === 1 ? "result" : "results"}
+            </p>
+          )}
           {loading ? (
             <p className="text-center text-muted-fg py-12 text-sm">Loading...</p>
           ) : visible.length === 0 ? (
@@ -801,7 +806,7 @@ export default function GuestsPage() {
                 Clear filters
               </Button>
               <Button className="flex-1" onClick={() => setFilterOpen(false)}>
-                Done
+                Show {visible.length} {visible.length === 1 ? "result" : "results"}
               </Button>
             </div>
           </div>
