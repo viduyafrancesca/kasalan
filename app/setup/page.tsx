@@ -62,6 +62,14 @@ export default function SetupPage() {
       has_secondary_sponsors: setup.hasSecondarySponsors,
     });
 
+    await supabase.from("wedding_sides").insert([
+      { wedding_id: wedding.id, kind: "partner1_family", sort_order: 0 },
+      { wedding_id: wedding.id, kind: "partner1_friend", sort_order: 1 },
+      { wedding_id: wedding.id, kind: "partner2_family", sort_order: 2 },
+      { wedding_id: wedding.id, kind: "partner2_friend", sort_order: 3 },
+      { wedding_id: wedding.id, kind: "mutual_friend",   sort_order: 4 },
+    ]);
+
     const items = preview.map((t) => ({
       wedding_id: wedding.id,
       title: t.title,
