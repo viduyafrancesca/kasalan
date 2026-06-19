@@ -48,3 +48,6 @@ next-env.d.ts
 
 # drizzle migrations
 drizzle/
+
+# manually-run SQL migrations (operational, not app source)
+/supabase/migrations/
