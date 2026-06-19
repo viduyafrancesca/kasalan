@@ -344,7 +344,11 @@ export default function GuestsPage() {
     .filter((p) => {
       const sideOk = sideFilters.length === 0 || sideFilters.includes(p.side);
       const roleOk = roleFilters.length === 0 || (p.kind === "sponsor" && roleFilters.includes(p.role));
-      const statusOk = statusFilters.length === 0 || (p.kind === "guest" && statusFilters.includes(p.rsvp_status));
+      const statusOk = statusFilters.length === 0 || (
+        p.kind === "guest"
+          ? statusFilters.includes(p.rsvp_status)
+          : statusFilters.includes(p.confirmed ? "attending" : "pending")
+      );
       return sideOk && roleOk && statusOk;
     })
     .filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
