@@ -12,13 +12,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { countAttendingPlusOnes } from "@/lib/guests";
+import { type SponsorRole, ROLE_ORDER, ROLE_LABELS } from "@/lib/sponsorRoles";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type RsvpStatus = "pending" | "attending" | "declined";
-type SponsorRole =
-  | "principal" | "cord" | "veil" | "arrhae" | "candle"
-  | "best_man" | "maid_of_honor" | "bridesmaid" | "groomsman";
 type GuestSide =
   | "partner1_family" | "partner1_friend"
   | "partner2_family" | "partner2_friend"
@@ -64,22 +62,6 @@ const RSVP_OPTIONS: { value: RsvpStatus; label: string }[] = [
   { value: "pending",   label: "Pending" },
   { value: "attending", label: "Attending" },
   { value: "declined",  label: "Declined" },
-];
-
-const ROLE_LABELS: Record<SponsorRole, string> = {
-  principal:    "Principal",
-  cord:         "Cord",
-  veil:         "Veil",
-  arrhae:       "Arrhae",
-  candle:       "Candle",
-  best_man:     "Best Man",
-  maid_of_honor:"Maid of Honor",
-  bridesmaid:   "Bridesmaid",
-  groomsman:    "Groomsman",
-};
-
-const ROLE_ORDER: SponsorRole[] = [
-  "principal", "cord", "veil", "arrhae", "candle", "best_man", "maid_of_honor", "bridesmaid", "groomsman",
 ];
 
 const SIDE_ORDER: (GuestSide | null)[] = [
