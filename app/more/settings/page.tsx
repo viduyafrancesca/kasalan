@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { type WeddingSide, sideLabel } from "@/lib/sides";
 import Link from "next/link";
 
 type CeremonyType = "catholic" | "civil" | "christian" | "garden" | "beach";
@@ -46,6 +47,12 @@ export default function SettingsPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
+  const [sides, setSides] = useState<WeddingSide[]>([]);
+  const [newSideLabel, setNewSideLabel] = useState("");
+  const [addingSide, setAddingSide] = useState(false);
+  const [deletingSideId, setDeletingSideId] = useState<string | null>(null);
+  const [sideWarnings, setSideWarnings] = useState<Record<string, string>>({});
+
   const load = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -53,13 +60,13 @@ export default function SettingsPage() {
     if (!w) return;
     setWeddingId(w.id);
 
-    const { data: setupRow } = await supabase
-      .from("wedding_setup")
-      .select("*")
-      .eq("wedding_id", w.id)
-      .maybeSingle();
+    const [{ data: setupRow }, { data: sideRows }] = await Promise.all([
+      supabase.from("wedding_setup").select("*").eq("wedding_id", w.id).maybeSingle(),
+      supabase.from("wedding_sides").select("*").eq("wedding_id", w.id).order("sort_order"),
+    ]);
 
     setHasSetupRow(!!setupRow);
+    setSides(sideRows ?? []);
     setForm({
       coupleName1: w.couple_name_1 ?? "",
       coupleName2: w.couple_name_2 ?? "",
@@ -122,6 +129,50 @@ export default function SettingsPage() {
     setHasSetupRow(true);
     setSaving(false);
     setSaved(true);
+  }
+
+  async function addSide() {
+    if (!weddingId || !newSideLabel.trim()) return;
+    setAddingSide(true);
+    const nextSortOrder = sides.length > 0 ? Math.max(...sides.map((s) => s.sort_order)) + 1 : 0;
+    const { data, error } = await supabase
+      .from("wedding_sides")
+      .insert({ wedding_id: weddingId, label: newSideLabel.trim(), sort_order: nextSortOrder })
+      .select("*")
+      .single();
+    if (!error && data) {
+      setSides((prev) => [...prev, data]);
+      setNewSideLabel("");
+    }
+    setAddingSide(false);
+  }
+
+  async function deleteSide(side: WeddingSide) {
+    setDeletingSideId(side.id);
+    setSideWarnings((prev) => {
+      const next = { ...prev };
+      delete next[side.id];
+      return next;
+    });
+
+    const [{ count: guestCount }, { count: sponsorCount }] = await Promise.all([
+      supabase.from("guests").select("id", { count: "exact", head: true }).eq("side", side.id),
+      supabase.from("sponsors").select("id", { count: "exact", head: true }).eq("side", side.id),
+    ]);
+    const total = (guestCount ?? 0) + (sponsorCount ?? 0);
+
+    if (total > 0) {
+      setSideWarnings((prev) => ({
+        ...prev,
+        [side.id]: `${total} ${total === 1 ? "person" : "people"} tagged with this side — remove the tag from them first.`,
+      }));
+      setDeletingSideId(null);
+      return;
+    }
+
+    await supabase.from("wedding_sides").delete().eq("id", side.id);
+    setSides((prev) => prev.filter((s) => s.id !== side.id));
+    setDeletingSideId(null);
   }
 
   async function handleSignOut() {
@@ -230,6 +281,41 @@ export default function SettingsPage() {
           <Button className="w-full" disabled={saving} onClick={save}>
             {saving ? "Saving..." : saved ? "Saved!" : "Save changes"}
           </Button>
+
+          <div className="space-y-3 pt-4 border-t border-border">
+            <h2 className="font-display text-lg">Sides</h2>
+            <p className="text-xs text-muted-fg">
+              Tags you can assign to guests and entourage members on the Guests page.
+            </p>
+            <div className="space-y-2">
+              {sides.map((side) => (
+                <div key={side.id} className="rounded-xl border border-border bg-card p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm">{sideLabel(side, { name1: form.coupleName1, name2: form.coupleName2 })}</span>
+                    <Button
+                      variant="outline"
+                      className="h-8 px-3 text-xs"
+                      disabled={deletingSideId === side.id}
+                      onClick={() => deleteSide(side)}
+                    >
+                      {deletingSideId === side.id ? "Checking..." : "Delete"}
+                    </Button>
+                  </div>
+                  {sideWarnings[side.id] && <p className="text-xs text-red-600">{sideWarnings[side.id]}</p>}
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                placeholder="e.g. College Friends"
+                value={newSideLabel}
+                onChange={(e) => setNewSideLabel(e.target.value)}
+              />
+              <Button disabled={!newSideLabel.trim() || addingSide} onClick={addSide}>
+                {addingSide ? "Adding..." : "Add"}
+              </Button>
+            </div>
+          </div>
 
           <div className="space-y-3 pt-4 border-t border-border">
             <h2 className="font-display text-lg">Account</h2>
