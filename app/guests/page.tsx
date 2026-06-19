@@ -112,6 +112,7 @@ export default function GuestsPage() {
   const [showMoveToSponsor, setShowMoveToSponsor] = useState(false);
   const [moveRole, setMoveRole] = useState<SponsorRole>("principal");
   const [moveError, setMoveError] = useState<string | null>(null);
+  const [showMoveToGuest, setShowMoveToGuest] = useState(false);
 
   const supabase = createClient();
 
@@ -226,6 +227,8 @@ export default function GuestsPage() {
   function openAddSponsor() {
     setEditingSponsor(null);
     setSponsorForm(EMPTY_SPONSOR);
+    setShowMoveToGuest(false);
+    setMoveError(null);
     setSponsorOpen(true);
   }
 
@@ -235,6 +238,8 @@ export default function GuestsPage() {
       name: s.name, role: s.role, confirmed: s.confirmed,
       phone: s.phone ?? "", email: s.email ?? "", notes: s.notes ?? "",
     });
+    setShowMoveToGuest(false);
+    setMoveError(null);
     setSponsorOpen(true);
   }
 
@@ -265,6 +270,39 @@ export default function GuestsPage() {
     setSavingSponsor(true);
     await supabase.from("sponsors").delete().eq("id", editingSponsor.id);
     setSponsorOpen(false);
+    setSavingSponsor(false);
+    load();
+  }
+
+  async function moveSponsorToGuest() {
+    if (!weddingId || !editingSponsor) return;
+    setSavingSponsor(true);
+    setMoveError(null);
+    const payload = {
+      wedding_id: weddingId,
+      name: sponsorForm.name.trim(),
+      rsvp_status: sponsorForm.confirmed ? "attending" : "pending",
+      meal_choice: null,
+      table_number: null,
+      plus_one: false,
+      phone: sponsorForm.phone || null,
+      email: sponsorForm.email || null,
+      notes: sponsorForm.notes || null,
+    };
+    const { error: insertError } = await supabase.from("guests").insert(payload);
+    if (insertError) {
+      setMoveError(insertError.message);
+      setSavingSponsor(false);
+      return;
+    }
+    const { error: deleteError } = await supabase.from("sponsors").delete().eq("id", editingSponsor.id);
+    if (deleteError) {
+      setMoveError(deleteError.message);
+      setSavingSponsor(false);
+      return;
+    }
+    setSponsorOpen(false);
+    setShowMoveToGuest(false);
     setSavingSponsor(false);
     load();
   }
@@ -573,11 +611,38 @@ export default function GuestsPage() {
               </div>
               <span className="text-sm">Confirmed they can attend</span>
             </button>
-            <Button className="w-full" disabled={!sponsorForm.name.trim() || savingSponsor} onClick={saveSponsor}>
-              {savingSponsor ? "Saving..." : editingSponsor ? "Save changes" : "Add to entourage"}
-            </Button>
-            {editingSponsor && (
-              <Button variant="destructive" className="w-full" disabled={savingSponsor} onClick={deleteSponsor}>Delete</Button>
+            {showMoveToGuest ? (
+              <div className="space-y-3 rounded-xl border border-accent bg-terra-100 p-3">
+                <p className="text-sm">Move this person to the guest list? Their role and confirmation status won&apos;t be needed anymore.</p>
+                {moveError && <p className="text-sm text-red-600">{moveError}</p>}
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    disabled={savingSponsor}
+                    onClick={() => { setShowMoveToGuest(false); setMoveError(null); }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button className="flex-1" disabled={savingSponsor} onClick={moveSponsorToGuest}>
+                    {savingSponsor ? "Moving..." : "Confirm move"}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <Button className="w-full" disabled={!sponsorForm.name.trim() || savingSponsor} onClick={saveSponsor}>
+                  {savingSponsor ? "Saving..." : editingSponsor ? "Save changes" : "Add to entourage"}
+                </Button>
+                {editingSponsor && (
+                  <>
+                    <Button variant="outline" className="w-full" disabled={savingSponsor} onClick={() => setShowMoveToGuest(true)}>
+                      Move to Guest List
+                    </Button>
+                    <Button variant="destructive" className="w-full" disabled={savingSponsor} onClick={deleteSponsor}>Delete</Button>
+                  </>
+                )}
+              </>
             )}
           </div>
         </DialogContent>
