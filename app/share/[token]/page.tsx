@@ -53,7 +53,10 @@ export default async function ShareViewPage({ params }: { params: Promise<{ toke
   const days = wedding.wedding_date ? daysUntil(wedding.wedding_date) : null;
   const allItems = items ?? [];
   const done = allItems.filter((i) => i.completed).length;
-  const totalGuests = (guests ?? []).length + countAttendingPlusOnes((guests ?? []) as GuestRsvpLike[]);
+  const totalGuests =
+    (guests ?? []).filter((g) => g.rsvp_status !== "declined").length +
+    countAttendingPlusOnes((guests ?? []) as GuestRsvpLike[]) +
+    (sponsors ?? []).length;
   const attending = (guests ?? []).filter((g) => g.rsvp_status === "attending").length;
 
   const guestRows: PersonRow[] = (guests ?? []).map((g) => ({
