@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { BottomNav } from "@/components/shared/BottomNav";
-import { Heart, MapPin, Share2, Users } from "lucide-react";
+import { Heart, MapPin, Share2, Settings } from "lucide-react";
 
 const SECTIONS = [
   { href: "/more/entourage", label: "Entourage",      desc: "Ninong, ninang & secondary sponsors",       Icon: Heart },
   { href: "/more/vendors",   label: "Vendor Shortlist", desc: "Venues, caterers, photographers & more",  Icon: MapPin },
   { href: "/more/share",     label: "Share",          desc: "Invite partner or share with family",       Icon: Share2 },
+  { href: "/more/settings",  label: "Settings",       desc: "Wedding details, ceremony preferences & account", Icon: Settings },
 ];
 
 export default function MorePage() {
