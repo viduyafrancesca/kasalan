@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { daysUntil } from "@/lib/utils";
 import { monthLabel, MONTH_BUCKETS } from "@/lib/checklist/generateChecklist";
+import { type GuestRsvpLike, countAttendingPlusOnes } from "@/lib/guests";
 
 export default async function ShareViewPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -25,7 +26,7 @@ export default async function ShareViewPage({ params }: { params: Promise<{ toke
   ] = await Promise.all([
     supabase.from("weddings").select("*").eq("id", weddingId).single(),
     supabase.from("checklist_items").select("*").eq("wedding_id", weddingId).order("months_before", { ascending: false }),
-    supabase.from("guests").select("rsvp_status").eq("wedding_id", weddingId),
+    supabase.from("guests").select("rsvp_status, plus_one").eq("wedding_id", weddingId),
   ]);
 
   if (!wedding) notFound();
@@ -33,7 +34,7 @@ export default async function ShareViewPage({ params }: { params: Promise<{ toke
   const days = wedding.wedding_date ? daysUntil(wedding.wedding_date) : null;
   const allItems = items ?? [];
   const done = allItems.filter((i) => i.completed).length;
-  const totalGuests = (guests ?? []).length;
+  const totalGuests = (guests ?? []).length + countAttendingPlusOnes((guests ?? []) as GuestRsvpLike[]);
   const attending = (guests ?? []).filter((g) => g.rsvp_status === "attending").length;
 
   const grouped = MONTH_BUCKETS.map((m) => ({
