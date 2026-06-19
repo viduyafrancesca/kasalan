@@ -11,6 +11,7 @@ import {
 } from "@/lib/dashboardReminders";
 import { type VendorCategory, getActiveCategories } from "@/lib/categories";
 import { type BudgetItemLike, type VendorStatusLike, computeBudgetTotals } from "@/lib/budget";
+import { type GuestRsvpLike, countAttendingPlusOnes } from "@/lib/guests";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -27,7 +28,7 @@ export default async function DashboardPage() {
     { data: dueBudgetItems },
     { count: attendingGuests },
     { count: pendingGuests },
-    { count: totalGuests },
+    { data: allGuests },
     { count: totalSponsors },
     { data: unconfirmedSponsors },
     { data: vendors },
@@ -39,7 +40,7 @@ export default async function DashboardPage() {
     supabase.from("budget_items").select("label, due_date, estimated_amount, paid_amount, vendor_id").eq("wedding_id", wedding.id).not("due_date", "is", null),
     supabase.from("guests").select("*", { count: "exact", head: true }).eq("wedding_id", wedding.id).eq("rsvp_status", "attending"),
     supabase.from("guests").select("*", { count: "exact", head: true }).eq("wedding_id", wedding.id).eq("rsvp_status", "pending"),
-    supabase.from("guests").select("*", { count: "exact", head: true }).eq("wedding_id", wedding.id),
+    supabase.from("guests").select("rsvp_status, plus_one").eq("wedding_id", wedding.id),
     supabase.from("sponsors").select("*", { count: "exact", head: true }).eq("wedding_id", wedding.id),
     supabase.from("sponsors").select("name").eq("wedding_id", wedding.id).eq("confirmed", false),
     supabase.from("vendors").select("id, name, categories, status").eq("wedding_id", wedding.id),
@@ -59,6 +60,11 @@ export default async function DashboardPage() {
   );
 
   const activeCategories = getActiveCategories((wedding.hidden_vendor_categories ?? []) as VendorCategory[]);
+
+  const totalGuests =
+    (allGuests ?? []).length +
+    countAttendingPlusOnes((allGuests ?? []) as GuestRsvpLike[]) +
+    (totalSponsors ?? 0);
 
   const reminders = [
     buildPaymentReminder((dueBudgetItems ?? []) as DueBudgetRow[], (vendors ?? []) as VendorRow[]),
@@ -81,7 +87,7 @@ export default async function DashboardPage() {
           <StatCard value={`${doneTasks ?? 0}/${totalTasks ?? 0}`} label="Tasks Done" />
           <StatCard value={totalBudget > 0 ? formatPHP(budgetTotals.remaining) : "—"} label="Budget Left" />
           <StatCard value={attendingGuests ?? 0} label="RSVPs" />
-          <StatCard value={(totalGuests ?? 0) + (totalSponsors ?? 0)} label="Total Guests" />
+          <StatCard value={totalGuests} label="Total Guests" />
         </div>
 
         {reminders.length > 0 && (
