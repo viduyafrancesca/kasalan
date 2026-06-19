@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus } from "lucide-react";
+import { Plus, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { countAttendingPlusOnes } from "@/lib/guests";
 import { type SponsorRole, ROLE_ORDER, ROLE_LABELS } from "@/lib/sponsorRoles";
@@ -404,12 +404,26 @@ export default function GuestsPage() {
             ))}
           </div>
 
-          <Input
-            className="mt-2 h-9 text-sm"
-            placeholder={filter === "entourage" ? "Search entourage..." : "Search guests..."}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <div className="mt-2 flex gap-2">
+            <Input
+              className="h-9 text-sm flex-1"
+              placeholder={filter === "entourage" ? "Search entourage..." : "Search guests..."}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <button
+              onClick={() => setFilterOpen(true)}
+              className="relative h-9 w-9 flex-shrink-0 rounded-lg border border-border bg-card flex items-center justify-center hover:bg-muted transition-colors"
+              aria-label="Filter"
+            >
+              <SlidersHorizontal className="w-4 h-4 text-muted-fg" />
+              {activeFilterCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-accent text-accent-fg text-[10px] font-semibold flex items-center justify-center">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* List */}
@@ -721,6 +735,86 @@ export default function GuestsPage() {
                 )}
               </>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Filter dialog ── */}
+      <Dialog open={filterOpen} onOpenChange={setFilterOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Filter</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Side</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {SIDE_ORDER.map((sideOption) => (
+                  <button
+                    key={sideOption ?? "unspecified"}
+                    onClick={() => toggleSideFilter(sideOption)}
+                    className={cn(
+                      "rounded-lg border py-2 text-xs font-medium transition-colors",
+                      sideFilters.includes(sideOption)
+                        ? "border-accent bg-terra-100 text-accent"
+                        : "border-border bg-card text-muted-fg hover:bg-muted"
+                    )}
+                  >
+                    {getSideLabel(sideOption, coupleNames)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Role</Label>
+              <div className="grid grid-cols-4 gap-2">
+                {ROLE_ORDER.map((r) => (
+                  <button
+                    key={r}
+                    onClick={() => toggleRoleFilter(r)}
+                    className={cn(
+                      "rounded-lg border py-2 text-xs font-medium transition-colors",
+                      roleFilters.includes(r)
+                        ? "border-accent bg-terra-100 text-accent"
+                        : "border-border bg-card text-muted-fg hover:bg-muted"
+                    )}
+                  >
+                    {ROLE_LABELS[r]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Status</Label>
+              <div className="flex gap-2">
+                {RSVP_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => toggleStatusFilter(opt.value)}
+                    className={cn(
+                      "flex-1 rounded-lg border py-2 text-xs font-medium transition-colors",
+                      statusFilters.includes(opt.value)
+                        ? "border-accent bg-terra-100 text-accent"
+                        : "border-border bg-card text-muted-fg hover:bg-muted"
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => { setSideFilters([]); setRoleFilters([]); setStatusFilters([]); }}
+              >
+                Clear filters
+              </Button>
+              <Button className="flex-1" onClick={() => setFilterOpen(false)}>
+                Done
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
