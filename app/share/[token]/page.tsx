@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/serviceRole";
 import { notFound } from "next/navigation";
 import { daysUntil } from "@/lib/utils";
 import { monthLabel, MONTH_BUCKETS } from "@/lib/checklist/generateChecklist";
@@ -23,7 +23,7 @@ const STATUS_VARIANT: Record<PersonStatus, "success" | "destructive" | "secondar
 
 export default async function ShareViewPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  const supabase = await createClient();
+  const supabase = createServiceRoleClient();
 
   const { data: shareToken } = await supabase
     .from("share_tokens")
