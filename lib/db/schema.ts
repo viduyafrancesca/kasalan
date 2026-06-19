@@ -161,6 +161,15 @@ export const shareTokens = pgTable("share_tokens", {
   expiresAt: timestamp("expires_at", { withTimezone: true }),
 });
 
+export const partnerInvites = pgTable("partner_invites", {
+  id:          uuid("id").primaryKey().defaultRandom(),
+  weddingId:   uuid("wedding_id").notNull().references(() => weddings.id, { onDelete: "cascade" }),
+  token:       uuid("token").notNull().defaultRandom(),
+  createdAt:   timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  acceptedAt:  timestamp("accepted_at", { withTimezone: true }),
+  acceptedBy:  uuid("accepted_by"),
+});
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export type Wedding = typeof weddings.$inferSelect;
@@ -174,3 +183,4 @@ export type Vendor = typeof vendors.$inferSelect;
 export type Sponsor = typeof sponsors.$inferSelect;
 export type Collaborator = typeof collaborators.$inferSelect;
 export type ShareToken = typeof shareTokens.$inferSelect;
+export type PartnerInvite = typeof partnerInvites.$inferSelect;
