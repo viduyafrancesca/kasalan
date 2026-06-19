@@ -47,6 +47,7 @@ type Sponsor = {
   phone: string | null;
   email: string | null;
   notes: string | null;
+  side: GuestSide | null;
 };
 
 type Person = Guest | Sponsor;
@@ -104,6 +105,7 @@ const EMPTY_GUEST = {
 
 const EMPTY_SPONSOR = {
   name: "", role: "principal" as SponsorRole, confirmed: false, phone: "", email: "", notes: "",
+  side: null as GuestSide | null,
 };
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -262,6 +264,7 @@ export default function GuestsPage() {
     setSponsorForm({
       name: s.name, role: s.role, confirmed: s.confirmed,
       phone: s.phone ?? "", email: s.email ?? "", notes: s.notes ?? "",
+      side: s.side,
     });
     setShowMoveToGuest(false);
     setMoveError(null);
@@ -279,6 +282,7 @@ export default function GuestsPage() {
       phone: sponsorForm.phone || null,
       email: sponsorForm.email || null,
       notes: sponsorForm.notes || null,
+      side: sponsorForm.side,
     };
     if (editingSponsor) {
       await supabase.from("sponsors").update(payload).eq("id", editingSponsor.id);
@@ -313,6 +317,7 @@ export default function GuestsPage() {
       phone: sponsorForm.phone || null,
       email: sponsorForm.email || null,
       notes: sponsorForm.notes || null,
+      side: sponsorForm.side,
     };
     const { error: insertError } = await supabase.from("guests").insert(payload);
     if (insertError) {
@@ -451,6 +456,7 @@ export default function GuestsPage() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium leading-tight">{person.name}</p>
                       {person.phone && <p className="text-xs text-muted-fg">{person.phone}</p>}
+                      {person.side && <p className="text-xs text-muted-fg">{getSideLabel(person.side, coupleNames)}</p>}
                     </div>
                     <Badge variant="default">{ROLE_LABELS[person.role]}</Badge>
                   </button>
@@ -626,6 +632,25 @@ export default function GuestsPage() {
                     )}
                   >
                     {ROLE_LABELS[r]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Side</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {SIDE_ORDER.map((sideOption) => (
+                  <button
+                    key={sideOption ?? "unspecified"}
+                    onClick={() => setSponsorForm((f) => ({ ...f, side: sideOption }))}
+                    className={cn(
+                      "rounded-lg border py-2 text-xs font-medium transition-colors",
+                      sponsorForm.side === sideOption
+                        ? "border-accent bg-terra-100 text-accent"
+                        : "border-border bg-card text-muted-fg hover:bg-muted"
+                    )}
+                  >
+                    {getSideLabel(sideOption, coupleNames)}
                   </button>
                 ))}
               </div>
