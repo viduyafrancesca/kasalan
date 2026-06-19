@@ -19,6 +19,10 @@ type RsvpStatus = "pending" | "attending" | "declined";
 type SponsorRole =
   | "principal" | "cord" | "veil" | "arrhae" | "candle"
   | "best_man" | "maid_of_honor" | "bridesmaid" | "groomsman";
+type GuestSide =
+  | "partner1_family" | "partner1_friend"
+  | "partner2_family" | "partner2_friend"
+  | "mutual_friend";
 
 type Guest = {
   kind: "guest";
@@ -31,6 +35,7 @@ type Guest = {
   table_number: number | null;
   plus_one: boolean;
   notes: string | null;
+  side: GuestSide | null;
 };
 
 type Sponsor = {
@@ -76,9 +81,25 @@ const ROLE_ORDER: SponsorRole[] = [
   "principal", "cord", "veil", "arrhae", "candle", "best_man", "maid_of_honor", "bridesmaid", "groomsman",
 ];
 
+const SIDE_ORDER: (GuestSide | null)[] = [
+  null, "partner1_family", "partner1_friend", "partner2_family", "partner2_friend", "mutual_friend",
+];
+
+function getSideLabel(side: GuestSide | null, coupleNames: { name1: string; name2: string }): string {
+  switch (side) {
+    case "partner1_family": return `${coupleNames.name1}'s Family`;
+    case "partner1_friend":  return `${coupleNames.name1}'s Friend`;
+    case "partner2_family": return `${coupleNames.name2}'s Family`;
+    case "partner2_friend":  return `${coupleNames.name2}'s Friend`;
+    case "mutual_friend":    return "Mutual Friend";
+    default:                 return "Unspecified";
+  }
+}
+
 const EMPTY_GUEST = {
   name: "", email: "", phone: "", rsvp_status: "pending" as RsvpStatus,
   meal_choice: "", table_number: "", plus_one: false, notes: "",
+  side: null as GuestSide | null,
 };
 
 const EMPTY_SPONSOR = {
@@ -91,6 +112,7 @@ type Filter = "all" | "guests" | "entourage";
 
 export default function GuestsPage() {
   const [weddingId, setWeddingId] = useState<string | null>(null);
+  const [coupleNames, setCoupleNames] = useState({ name1: "Partner 1", name2: "Partner 2" });
   const [guests, setGuests] = useState<Guest[]>([]);
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -122,6 +144,7 @@ export default function GuestsPage() {
     const w = await getWeddingForUser(supabase, user.id);
     if (!w) return;
     setWeddingId(w.id);
+    setCoupleNames({ name1: w.couple_name_1, name2: w.couple_name_2 });
     const [{ data: g }, { data: s }] = await Promise.all([
       supabase.from("guests").select("*").eq("wedding_id", w.id).order("name"),
       supabase.from("sponsors").select("*").eq("wedding_id", w.id).order("name"),
@@ -150,7 +173,7 @@ export default function GuestsPage() {
       name: g.name, email: g.email ?? "", phone: g.phone ?? "",
       rsvp_status: g.rsvp_status, meal_choice: g.meal_choice ?? "",
       table_number: g.table_number != null ? String(g.table_number) : "",
-      plus_one: g.plus_one, notes: g.notes ?? "",
+      plus_one: g.plus_one, notes: g.notes ?? "", side: g.side,
     });
     setShowMoveToSponsor(false);
     setMoveRole("principal");
@@ -171,6 +194,7 @@ export default function GuestsPage() {
       table_number: guestForm.table_number ? Number(guestForm.table_number) : null,
       plus_one: guestForm.plus_one,
       notes: guestForm.notes || null,
+      side: guestForm.side,
     };
     if (editingGuest) {
       await supabase.from("guests").update(payload).eq("id", editingGuest.id);
@@ -203,6 +227,7 @@ export default function GuestsPage() {
       phone: guestForm.phone || null,
       email: guestForm.email || null,
       notes: guestForm.notes || null,
+      side: guestForm.side,
     };
     const { error: insertError } = await supabase.from("sponsors").insert(payload);
     if (insertError) {
@@ -407,6 +432,7 @@ export default function GuestsPage() {
                       </p>
                       {person.meal_choice && <p className="text-xs text-muted-fg">{person.meal_choice}</p>}
                       {person.table_number && <p className="text-xs text-muted-fg">Table {person.table_number}</p>}
+                      {person.side && <p className="text-xs text-muted-fg">{getSideLabel(person.side, coupleNames)}</p>}
                     </div>
                     <Badge variant={RSVP_VARIANT[person.rsvp_status]}>{person.rsvp_status}</Badge>
                   </button>
@@ -500,6 +526,25 @@ export default function GuestsPage() {
             <div className="space-y-1.5">
               <Label>Notes</Label>
               <Input placeholder="e.g. Vegetarian, wheelchair access" value={guestForm.notes} onChange={(e) => setGuestForm((f) => ({ ...f, notes: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Side</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {SIDE_ORDER.map((sideOption) => (
+                  <button
+                    key={sideOption ?? "unspecified"}
+                    onClick={() => setGuestForm((f) => ({ ...f, side: sideOption }))}
+                    className={cn(
+                      "rounded-lg border py-2 text-xs font-medium transition-colors",
+                      guestForm.side === sideOption
+                        ? "border-accent bg-terra-100 text-accent"
+                        : "border-border bg-card text-muted-fg hover:bg-muted"
+                    )}
+                  >
+                    {getSideLabel(sideOption, coupleNames)}
+                  </button>
+                ))}
+              </div>
             </div>
             {showMoveToSponsor ? (
               <div className="space-y-3 rounded-xl border border-accent bg-terra-100 p-3">
