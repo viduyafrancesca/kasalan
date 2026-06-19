@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { countAttendingPlusOnes } from "@/lib/guests";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -232,7 +233,7 @@ export default function GuestsPage() {
   const attending   = guests.filter((g) => g.rsvp_status === "attending").length;
   const pending     = guests.filter((g) => g.rsvp_status === "pending").length;
   const declined    = guests.filter((g) => g.rsvp_status === "declined").length;
-  const totalHeads  = attending + guests.filter((g) => g.rsvp_status === "attending" && g.plus_one).length;
+  const totalHeads  = attending + countAttendingPlusOnes(guests);
 
   const allPeople: Person[] = [...guests, ...sponsors];
 
