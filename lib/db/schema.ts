@@ -26,6 +26,10 @@ export const sponsorRoleEnum = pgEnum("sponsor_role", [
   "principal", "cord", "veil", "arrhae", "candle", "best_man", "maid_of_honor", "bridesmaid", "groomsman",
 ]);
 
+export const guestSideEnum = pgEnum("guest_side", [
+  "partner1_family", "partner1_friend", "partner2_family", "partner2_friend", "mutual_friend",
+]);
+
 // ─── Tables ──────────────────────────────────────────────────────────────────
 
 export const weddings = pgTable("weddings", {
@@ -105,6 +109,7 @@ export const guests = pgTable("guests", {
   tableNumber: smallint("table_number"),
   plusOne:     boolean("plus_one").notNull().default(false),
   notes:       text("notes"),
+  side:        guestSideEnum("side"),
   createdAt:   timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -130,6 +135,7 @@ export const sponsors = pgTable("sponsors", {
   role:      sponsorRoleEnum("role").notNull().default("principal"),
   confirmed: boolean("confirmed").notNull().default(false),
   notes:     text("notes"),
+  side:      guestSideEnum("side"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
