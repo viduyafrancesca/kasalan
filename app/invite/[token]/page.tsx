@@ -36,25 +36,35 @@ export default function InvitePage() {
       const supabase = createClient();
 
       const { data: inv } = await supabase
-        .from("partner_invites")
-        .select("token, wedding_id, weddings(couple_name_1, couple_name_2, wedding_date)")
-        .eq("token", token)
+        .rpc("get_invite_preview", { invite_token: token })
         .maybeSingle();
 
       if (!inv) { setStatus("invalid"); return; }
 
-      const w = inv.weddings as unknown as { couple_name_1: string; couple_name_2: string; wedding_date: string | null };
-      setInvite({ token: inv.token, wedding_id: inv.wedding_id, ...w });
+      const preview = inv as unknown as {
+        wedding_id: string;
+        couple_name_1: string;
+        couple_name_2: string;
+        wedding_date: string | null;
+      };
+
+      setInvite({
+        token: token,
+        wedding_id: preview.wedding_id,
+        couple_name_1: preview.couple_name_1,
+        couple_name_2: preview.couple_name_2,
+        wedding_date: preview.wedding_date,
+      });
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setStatus("auth"); return; }
 
       // Already owner?
-      const { data: owned } = await supabase.from("weddings").select("id").eq("id", inv.wedding_id).eq("owner_id", user.id).maybeSingle();
+      const { data: owned } = await supabase.from("weddings").select("id").eq("id", preview.wedding_id).eq("owner_id", user.id).maybeSingle();
       if (owned) { router.replace("/dashboard"); return; }
 
       // Already collaborator?
-      const { data: collab } = await supabase.from("collaborators").select("id").eq("wedding_id", inv.wedding_id).eq("user_id", user.id).maybeSingle();
+      const { data: collab } = await supabase.from("collaborators").select("id").eq("wedding_id", preview.wedding_id).eq("user_id", user.id).maybeSingle();
       if (collab) { router.replace("/dashboard"); return; }
 
       setStatus("ready");
@@ -84,16 +94,12 @@ export default function InvitePage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setStatus("auth"); return; }
 
-    await supabase.from("collaborators").insert({
-      wedding_id: invite.wedding_id,
-      user_id: user.id,
-      role: "partner",
-    });
-
-    await supabase
-      .from("partner_invites")
-      .update({ accepted_at: new Date().toISOString(), accepted_by: user.id })
-      .eq("token", invite.token);
+    const { error } = await supabase.rpc("accept_invite", { invite_token: invite.token });
+    if (error) {
+      setAuthError(error.message);
+      setStatus("ready");
+      return;
+    }
 
     router.push("/dashboard");
   }
@@ -170,6 +176,7 @@ export default function InvitePage() {
             <div className="rounded-xl bg-terra-100 border border-terra-200 p-4 text-sm text-center text-foreground">
               You&apos;ll get full access to edit the checklist, budget, guests, and more.
             </div>
+            {authError && <p className="text-sm text-red-600 text-center">{authError}</p>}
             <Button className="w-full" disabled={status === "joining"} onClick={handleJoin}>
               {status === "joining" ? "Joining..." : "Join wedding plan"}
             </Button>
