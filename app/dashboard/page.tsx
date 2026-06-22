@@ -33,6 +33,7 @@ export default async function DashboardPage() {
     { data: unconfirmedSponsors },
     { data: vendors },
     { data: upNext },
+    { data: legalItems },
   ] = await Promise.all([
     supabase.from("checklist_items").select("*", { count: "exact", head: true }).eq("wedding_id", wedding.id),
     supabase.from("checklist_items").select("*", { count: "exact", head: true }).eq("wedding_id", wedding.id).eq("completed", true),
@@ -48,8 +49,14 @@ export default async function DashboardPage() {
       .select("id, title, category, months_before")
       .eq("wedding_id", wedding.id)
       .eq("completed", false)
+      .neq("category", "Legal")
       .order("months_before", { ascending: true })
       .limit(4),
+    supabase.from("checklist_items")
+      .select("id, title, completed")
+      .eq("wedding_id", wedding.id)
+      .eq("category", "Legal")
+      .order("months_before", { ascending: true }),
   ]);
 
   const totalBudget = Number(wedding.budget_total ?? 0);
@@ -65,6 +72,8 @@ export default async function DashboardPage() {
     (allGuests ?? []).length +
     countAttendingPlusOnes((allGuests ?? []) as GuestRsvpLike[]) +
     (totalSponsors ?? 0);
+
+  const legalDone = (legalItems ?? []).filter((i) => i.completed).length;
 
   const reminders = [
     buildPaymentReminder((dueBudgetItems ?? []) as DueBudgetRow[], (vendors ?? []) as VendorRow[]),
@@ -103,6 +112,25 @@ export default async function DashboardPage() {
                   <div className="w-2 h-2 rounded-full bg-accent flex-shrink-0" />
                   <p className="text-sm font-medium">{r.text}</p>
                 </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {(legalItems ?? []).length > 0 && (
+          <div>
+            <div className="flex items-baseline justify-between mb-3">
+              <h2 className="font-display text-lg">Legal Requirements</h2>
+              <span className="text-xs text-muted-fg">{legalDone}/{legalItems!.length}</span>
+            </div>
+            <div className="bg-card rounded-xl border border-border overflow-hidden">
+              {legalItems!.map((item) => (
+                <div key={item.id} className="flex items-center gap-3 px-4 py-3 border-b border-border last:border-0">
+                  <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${item.completed ? "bg-accent border-accent" : "border-terra-400"}`}>
+                    {item.completed && <span className="text-white text-[10px]">✓</span>}
+                  </div>
+                  <p className={`text-sm ${item.completed ? "line-through text-muted-fg" : ""}`}>{item.title}</p>
+                </div>
               ))}
             </div>
           </div>
