@@ -72,21 +72,23 @@ export const checklistTemplates = pgTable("checklist_templates", {
   isOptional:          boolean("is_optional").notNull().default(false),
   description:         text("description"),
   sortOrder:           integer("sort_order").default(0),
+  dependsOnTitle:      text("depends_on_title"),
 });
 
 export const checklistItems = pgTable("checklist_items", {
-  id:           uuid("id").primaryKey().defaultRandom(),
-  weddingId:    uuid("wedding_id").notNull().references(() => weddings.id, { onDelete: "cascade" }),
-  templateId:   uuid("template_id").references(() => checklistTemplates.id),
-  title:        text("title").notNull(),
-  category:     text("category").notNull(),
-  monthsBefore: numeric("months_before", { precision: 4, scale: 2 }).notNull(),
-  assignedTo:   uuid("assigned_to"),
-  completed:    boolean("completed").notNull().default(false),
-  completedAt:  timestamp("completed_at", { withTimezone: true }),
-  notes:        text("notes"),
-  isCustom:     boolean("is_custom").notNull().default(false),
-  createdAt:    timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  id:             uuid("id").primaryKey().defaultRandom(),
+  weddingId:      uuid("wedding_id").notNull().references(() => weddings.id, { onDelete: "cascade" }),
+  templateId:     uuid("template_id").references(() => checklistTemplates.id),
+  title:          text("title").notNull(),
+  category:       text("category").notNull(),
+  monthsBefore:   numeric("months_before", { precision: 4, scale: 2 }).notNull(),
+  assignedTo:     uuid("assigned_to"),
+  completed:      boolean("completed").notNull().default(false),
+  completedAt:    timestamp("completed_at", { withTimezone: true }),
+  notes:          text("notes"),
+  isCustom:       boolean("is_custom").notNull().default(false),
+  createdAt:      timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  dependsOnTitle: text("depends_on_title"),
 });
 
 export const budgetItems = pgTable("budget_items", {
