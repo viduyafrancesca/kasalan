@@ -76,6 +76,7 @@ export default function SetupPage() {
       category: t.category,
       months_before: t.monthsBefore,
       is_custom: false,
+      depends_on_title: t.dependsOnTitle ?? null,
     }));
     await supabase.from("checklist_items").insert(items);
 

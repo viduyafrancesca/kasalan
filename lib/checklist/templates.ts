@@ -8,6 +8,7 @@ export type TemplateInput = {
   isOptional?: boolean;
   description?: string;
   sortOrder?: number;
+  dependsOnTitle?: string;
 };
 
 const ALL = ["catholic", "civil", "christian", "garden", "beach"];
@@ -214,6 +215,7 @@ export const CHECKLIST_TEMPLATES: TemplateInput[] = [
     ceremonyTypes: ALL,
     sortOrder: 11,
     description: "Marriage license is valid for 120 days from issuance.",
+    dependsOnTitle: "Prepare PSA birth certificates",
   },
 
   // ── 3 months before ──────────────────────────────────────────────────────
@@ -332,6 +334,7 @@ export const CHECKLIST_TEMPLATES: TemplateInput[] = [
     monthsBefore: 0.25,
     ceremonyTypes: ALL,
     sortOrder: 1,
+    dependsOnTitle: "Apply for marriage license at LCR",
   },
   {
     title: "Prepare arrhae, rings, and ceremony items",
