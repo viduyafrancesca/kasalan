@@ -131,6 +131,7 @@ export const vendors = pgTable("vendors", {
   status:        vendorStatusEnum("status").notNull().default("interested"),
   notes:         text("notes"),
   createdAt:     timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  inclusions:    text("inclusions").array().notNull().default([]),
 });
 
 export const sponsors = pgTable("sponsors", {
