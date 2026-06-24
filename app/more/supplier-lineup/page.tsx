@@ -125,6 +125,7 @@ export default function SupplierLineupListPage() {
           <div className="flex-1">
             <h1 className="font-display text-2xl">Supplier Lineup</h1>
           </div>
+          <Link href="/more/supplier-lineup/compare" className="text-accent text-sm">Compare</Link>
         </div>
 
         <div className="px-4 py-4">
