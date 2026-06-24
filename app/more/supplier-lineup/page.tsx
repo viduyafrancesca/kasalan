@@ -66,10 +66,17 @@ export default function SupplierLineupListPage() {
 
     const next: Record<string, Total> = {};
     for (const l of ls) next[l.id] = { min: 0, max: 0, hasPrice: false };
+    const countedVendors = new Map<string, Set<string>>();
     for (const p of picks) {
-      const v = vendorMap.get(p.vendor_id);
       const entry = next[p.lineup_id];
-      if (!v || !entry) continue;
+      if (!entry) continue;
+      const seen = countedVendors.get(p.lineup_id) ?? new Set<string>();
+      countedVendors.set(p.lineup_id, seen);
+      if (seen.has(p.vendor_id)) continue;
+      seen.add(p.vendor_id);
+
+      const v = vendorMap.get(p.vendor_id);
+      if (!v) continue;
       if (v.price_range_min) { entry.min += Number(v.price_range_min); entry.hasPrice = true; }
       if (v.price_range_max) { entry.max += Number(v.price_range_max); entry.hasPrice = true; }
     }

@@ -112,9 +112,11 @@ export default function SupplierLineupBuilderPage() {
 
   const { totalMin, totalMax, hasPrice } = useMemo(() => {
     let min = 0, max = 0, has = false;
+    const countedVendorIds = new Set<string>();
     for (const cat of activeCategories) {
       const pick = picksByCategory.get(cat);
-      if (!pick) continue;
+      if (!pick || countedVendorIds.has(pick.vendor.id)) continue;
+      countedVendorIds.add(pick.vendor.id);
       if (pick.vendor.price_range_min) { min += Number(pick.vendor.price_range_min); has = true; }
       if (pick.vendor.price_range_max) { max += Number(pick.vendor.price_range_max); has = true; }
     }

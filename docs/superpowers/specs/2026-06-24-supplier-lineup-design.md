@@ -79,7 +79,7 @@ As with every schema change in this project: this SQL is written to a dated file
 **Behavior:**
 
 - On load, fetch all `supplier_lineups` for the wedding, plus their picks joined with `vendors` (for price totals).
-- Render each lineup as a card: name, a combined estimated total (sum of `price_range_min` / sum of `price_range_max` across every category that currently has a pick — categories with no pick aren't counted; if no picks have any price set, show "—"), the lineup's `created_at` date, and a delete (trash icon) button with a confirm step.
+- Render each lineup as a card: name, a combined estimated total (sum of `price_range_min` / sum of `price_range_max` across every **unique vendor** currently picked anywhere in the lineup — a vendor occupying multiple category slots is counted once, since its price range represents one payment regardless of how many slots it fills; categories with no pick aren't counted; if no picks have any price set, show "—"), the lineup's `created_at` date, and a delete (trash icon) button with a confirm step.
 - Tapping a card's body (not the delete button) navigates to `app/more/supplier-lineup/[id]`.
 - A "+ New Lineup" button opens a small dialog with a single text input ("Lineup name", e.g. "Budget option"); on confirm, inserts a new `supplier_lineups` row and navigates straight into its builder page.
 - Empty state ("No lineups yet — create one to start comparing a full wedding combination") when there are none.
@@ -94,7 +94,7 @@ As with every schema change in this project: this SQL is written to a dated file
 2. Load the wedding's active categories (`getActiveCategories`, same as Vendors/Compare pages) and all its non-declined vendors.
 3. Load this lineup's existing picks (`supplier_lineup_picks` joined with `vendors`), keyed by category.
 4. **Header:** back link to the list, an editable name field (plain text input, pre-filled with the lineup's current name, saves via an update on blur — no separate "Save" button for the name).
-5. **Total banner:** "Estimated total: ₱X – ₱Y" computed by summing `price_range_min` and `price_range_max` across every category with a current pick. If zero picks have any price, show "Add vendors to see an estimated total" instead.
+5. **Total banner:** "Estimated total: ₱X – ₱Y" computed by summing `price_range_min` and `price_range_max` once per **unique vendor** picked anywhere in the lineup (not once per category slot — a vendor filling two slots, e.g. a venue+catering package, is still one payment). If zero picks have any price, show "Add vendors to see an estimated total" instead.
 6. **Category rows**, one per active category, in `CATEGORY_ORDER`:
    - **Picked:** vendor name, price range (same formatting as the Vendors/Compare pages), contact, inclusion tags (same chip style as the Vendors dialog), a "Change" button (reopens the picker) and a "✕" button (deletes that category's pick row).
    - **Unpicked, vendors available:** a "Choose vendor" button opens a picker dialog listing every vendor in that category with `status !== "declined"` (name, price range, status badge); tapping one upserts the pick for that category (delete any existing pick row for this `lineup_id` + `category`, insert the new one) and closes the dialog.
