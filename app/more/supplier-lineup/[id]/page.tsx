@@ -123,6 +123,18 @@ export default function SupplierLineupBuilderPage() {
     return { totalMin: min, totalMax: max, hasPrice: has };
   }, [activeCategories, picksByCategory]);
 
+  const uniqueInclusionVendors = useMemo(() => {
+    const seen = new Set<string>();
+    const result: Vendor[] = [];
+    for (const cat of activeCategories) {
+      const pick = picksByCategory.get(cat);
+      if (!pick || seen.has(pick.vendor.id)) continue;
+      seen.add(pick.vendor.id);
+      if (pick.vendor.inclusions.length > 0) result.push(pick.vendor);
+    }
+    return result;
+  }, [activeCategories, picksByCategory]);
+
   function priceLabel(v: Vendor) {
     if (!v.price_range_min && !v.price_range_max) return "—";
     const min = v.price_range_min ? formatPHP(Number(v.price_range_min)) : "";
@@ -230,15 +242,6 @@ export default function SupplierLineupBuilderPage() {
                           <p className="text-sm font-medium">{pick.vendor.name}</p>
                           <p className="text-xs text-muted-fg">{priceLabel(pick.vendor)}</p>
                           {pick.vendor.contact && <p className="text-xs text-muted-fg">{pick.vendor.contact}</p>}
-                          {pick.vendor.inclusions.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 mt-1.5">
-                              {pick.vendor.inclusions.map((tag) => (
-                                <span key={tag} className="rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] text-muted-fg">
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                          )}
                         </div>
                       ) : eligible.length > 0 ? (
                         <button
@@ -254,6 +257,26 @@ export default function SupplierLineupBuilderPage() {
                   );
                 })}
               </div>
+
+              {uniqueInclusionVendors.length > 0 && (
+                <div className="bg-card rounded-xl border border-border overflow-hidden">
+                  <div className="px-4 py-3 border-b border-border">
+                    <h3 className="text-xs uppercase tracking-widest text-accent font-semibold">Inclusions</h3>
+                  </div>
+                  {uniqueInclusionVendors.map((vendor) => (
+                    <div key={vendor.id} className="px-4 py-3 border-b border-border last:border-0">
+                      <p className="text-sm font-medium">{vendor.name}</p>
+                      <div className="flex flex-wrap gap-1.5 mt-1.5">
+                        {vendor.inclusions.map((tag) => (
+                          <span key={tag} className="rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] text-muted-fg">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <button
                 onClick={() => window.print()}
@@ -284,10 +307,20 @@ export default function SupplierLineupBuilderPage() {
                 <p className="text-sm font-medium">{pick.vendor.name}</p>
                 <p className="text-xs">{priceLabel(pick.vendor)}</p>
                 {pick.vendor.contact && <p className="text-xs">{pick.vendor.contact}</p>}
-                {pick.vendor.inclusions.length > 0 && <p className="text-xs">{pick.vendor.inclusions.join(", ")}</p>}
               </div>
             );
           })
+        )}
+
+        {uniqueInclusionVendors.length > 0 && (
+          <div className="mt-4">
+            <p className="text-xs uppercase tracking-widest font-semibold mb-1">Inclusions</p>
+            {uniqueInclusionVendors.map((vendor) => (
+              <p key={vendor.id} className="text-xs mb-1">
+                <span className="font-medium">{vendor.name}:</span> {vendor.inclusions.join(", ")}
+              </p>
+            ))}
+          </div>
         )}
       </div>
 
