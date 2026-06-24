@@ -173,6 +173,20 @@ export const partnerInvites = pgTable("partner_invites", {
   acceptedBy:  uuid("accepted_by"),
 });
 
+export const supplierLineups = pgTable("supplier_lineups", {
+  id:        uuid("id").primaryKey().defaultRandom(),
+  weddingId: uuid("wedding_id").notNull().references(() => weddings.id, { onDelete: "cascade" }),
+  name:      text("name").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const supplierLineupPicks = pgTable("supplier_lineup_picks", {
+  id:        uuid("id").primaryKey().defaultRandom(),
+  lineupId:  uuid("lineup_id").notNull().references(() => supplierLineups.id, { onDelete: "cascade" }),
+  category:  text("category").notNull(),
+  vendorId:  uuid("vendor_id").notNull().references(() => vendors.id, { onDelete: "cascade" }),
+});
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export type Wedding = typeof weddings.$inferSelect;
@@ -187,3 +201,5 @@ export type Sponsor = typeof sponsors.$inferSelect;
 export type Collaborator = typeof collaborators.$inferSelect;
 export type ShareToken = typeof shareTokens.$inferSelect;
 export type PartnerInvite = typeof partnerInvites.$inferSelect;
+export type SupplierLineup = typeof supplierLineups.$inferSelect;
+export type SupplierLineupPick = typeof supplierLineupPicks.$inferSelect;
