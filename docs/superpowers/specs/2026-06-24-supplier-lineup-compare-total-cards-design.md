@@ -2,18 +2,18 @@
 
 ## Purpose
 
-Three improvements to the Supplier Lineup comparison page (`app/more/supplier-lineup/compare/page.tsx`, shipped earlier this session): make each lineup's total stand out instead of blending in as a plain table row, let the table use the full available width on screens big enough to fit it without forced horizontal scrolling, and drop per-category prices from the table now that totals are prominently shown elsewhere.
+Three improvements to the Supplier Lineup comparison page (`app/more/supplier-lineup/compare/page.tsx`, shipped earlier this session): make each lineup's total stand out instead of blending in as a plain table row, let the table use the full available width on screens big enough to fit it without forced horizontal scrolling, and drop per-category prices from the table now that totals are visually emphasized.
 
 ## Scope
 
 Applies only to `app/more/supplier-lineup/compare/page.tsx`. No other page is affected.
 
-### 1. Total summary cards (replacing the in-table Total row)
+### 1. Total row — back inside the table, bold and highlighted
 
-- Adds a horizontally-scrollable strip of cards above the table — one card per lineup — each showing the lineup's name (bold, linking to `/more/supplier-lineup/[id]`) and its total (large, bold), styled with the same `bg-terra-100 rounded-xl px-4 py-3` treatment already used for the "Estimated total" banner on `app/more/supplier-lineup/[id]/page.tsx`.
-- Each card is `min-w-40` wide, matching the table's existing lineup-column minimum width, so the cards visually line up with their corresponding columns below even though the two scroll independently (no literal scroll-sync needed).
-- The table drops two things it currently has: its lineup-name header row, and its in-table Total row — both are now redundant since the cards above cover that information. The table starts directly with category rows (sticky label column unchanged).
-- Out of scope: any change to the per-lineup builder page's own total banner (it already has this treatment), and any change to the Supplier Lineup list page.
+- A separate above-the-table card strip was tried and then reverted: the lineup-name header row and the Total row both belong back inside the table (this is the user's preferred layout), but the Total row now gets visual emphasis instead of looking like a plain data row.
+- The table keeps its original two header rows: the lineup-name row (each name a `Link` to `/more/supplier-lineup/[id]`, unchanged from the original layout) and a Total row directly beneath it.
+- The Total row gets a `bg-terra-100` background (same highlight color used elsewhere in the app for emphasis, e.g. the builder page's own total banner) and bold (`font-bold`) text for both its label and its values, so it visually stands out from the plain category rows below it. Its sticky label cell also gets the matching `bg-terra-100` background so the highlight doesn't break when scrolling horizontally.
+- Out of scope: any change to the per-lineup builder page's own total banner (unaffected), and any change to the Supplier Lineup list page.
 
 ### 2. Responsive width — no forced scroll when the screen fits
 
