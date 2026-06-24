@@ -73,14 +73,6 @@ export default function SupplierLineupComparePage() {
     return map;
   }, [picks]);
 
-  function priceLabel(v: Vendor) {
-    if (!v.price_range_min && !v.price_range_max) return "—";
-    const min = v.price_range_min ? formatPHP(Number(v.price_range_min)) : "";
-    const max = v.price_range_max ? formatPHP(Number(v.price_range_max)) : "";
-    if (min && max) return `${min} – ${max}`;
-    return min || max;
-  }
-
   function totalLabel(lineupId: string) {
     const categoryMap = pickMap.get(lineupId);
     if (!categoryMap) return "—";
@@ -101,12 +93,11 @@ export default function SupplierLineupComparePage() {
     const vendorId = pickMap.get(lineupId)?.get(cat);
     if (!vendorId) return "—";
     const v = vendorMap.get(vendorId);
-    if (!v) return "—";
-    return `${v.name} — ${priceLabel(v)}`;
+    return v ? v.name : "—";
   }
 
   return (
-    <div className="flex flex-col min-h-screen max-w-2xl mx-auto w-full">
+    <div className="flex flex-col min-h-screen max-w-2xl lg:max-w-5xl mx-auto w-full">
       <div className="flex-1 pb-20 lg:pb-8">
 
         <div className="bg-background px-4 py-5 border-b border-border sticky top-0 z-10 flex items-center gap-3">
@@ -127,51 +118,38 @@ export default function SupplierLineupComparePage() {
               </Link>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-border">
-              <table className="min-w-full text-sm border-collapse">
-                <tbody>
-                  <tr>
-                    <th className="sticky left-0 z-10 bg-card text-left px-3 py-2 text-xs font-semibold text-muted-fg border-b border-border w-28 min-w-28">
-                      &nbsp;
-                    </th>
-                    {lineups.map((l) => (
-                      <th
-                        key={l.id}
-                        className="px-3 py-2 text-left font-medium border-b border-border border-l border-border min-w-40 whitespace-nowrap"
-                      >
-                        <Link href={`/more/supplier-lineup/${l.id}`} className="text-accent hover:underline">
-                          {l.name}
-                        </Link>
-                      </th>
-                    ))}
-                  </tr>
+            <>
+              <div className="flex gap-3 overflow-x-auto pb-1 mb-3">
+                <div className="w-28 flex-shrink-0" />
+                {lineups.map((l) => (
+                  <div key={l.id} className="min-w-40 flex-shrink-0 bg-terra-100 rounded-xl px-4 py-3">
+                    <Link href={`/more/supplier-lineup/${l.id}`} className="text-sm font-semibold text-accent hover:underline">
+                      {l.name}
+                    </Link>
+                    <p className="text-base font-bold mt-0.5">{totalLabel(l.id)}</p>
+                  </div>
+                ))}
+              </div>
 
-                  <tr>
-                    <td className="sticky left-0 z-10 bg-card px-3 py-2 text-xs font-semibold text-muted-fg border-b border-border">
-                      Total
-                    </td>
-                    {lineups.map((l) => (
-                      <td key={l.id} className="px-3 py-2 border-b border-border border-l border-border whitespace-nowrap">
-                        {totalLabel(l.id)}
-                      </td>
-                    ))}
-                  </tr>
-
-                  {activeCategories.map((cat) => (
-                    <tr key={cat}>
-                      <td className="sticky left-0 z-10 bg-card px-3 py-2 text-xs font-semibold text-muted-fg border-b border-border">
-                        {CATEGORY_LABELS[cat]}
-                      </td>
-                      {lineups.map((l) => (
-                        <td key={l.id} className="px-3 py-2 border-b border-border border-l border-border whitespace-nowrap">
-                          {cellLabel(l.id, cat)}
+              <div className="overflow-x-auto rounded-xl border border-border">
+                <table className="min-w-full text-sm border-collapse">
+                  <tbody>
+                    {activeCategories.map((cat) => (
+                      <tr key={cat}>
+                        <td className="sticky left-0 z-10 bg-card px-3 py-2 text-xs font-semibold text-muted-fg border-b border-border">
+                          {CATEGORY_LABELS[cat]}
                         </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        {lineups.map((l) => (
+                          <td key={l.id} className="px-3 py-2 border-b border-border border-l border-border whitespace-nowrap">
+                            {cellLabel(l.id, cat)}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       </div>
