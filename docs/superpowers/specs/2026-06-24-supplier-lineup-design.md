@@ -11,7 +11,8 @@ A couple shortlists multiple vendors per category, but has no way to assemble a 
 - Picks are drawn only from vendors with `status !== "declined"`.
 - Export is via the browser's native print dialog (which offers "Save as PDF" on every platform) — no PDF-generation library, no new dependency.
 - Picking a vendor into a lineup does **not** change that vendor's `status` on the Vendors page — a lineup is a planning/combination tool, separate from the vendor's own booking status.
-- Out of scope: auto-filling other categories a multi-category vendor belongs to (picking a vendor for one category slot only fills that slot); editing vendor details from this feature (still done on the Vendors page); merging/diffing two lineups against each other.
+- A vendor tagged with multiple categories (e.g. Vendor A does both photography and styling) can be picked into **more than one category slot** in the same lineup — once for Photography, once for Styling — since the uniqueness constraint is per category slot, not per vendor. Picking it for one slot does **not** automatically fill its other eligible slots; each slot's pick is a separate, independent action (the "auto-fill other categories" behavior is what's out of scope below, not multi-slot picking itself).
+- Out of scope: auto-filling other categories a multi-category vendor belongs to just because it was picked for one of them (picking it into Photography does not automatically also place it into Styling — that still requires picking it there explicitly); editing vendor details from this feature (still done on the Vendors page); merging/diffing two lineups against each other.
 
 ## Data Model
 
