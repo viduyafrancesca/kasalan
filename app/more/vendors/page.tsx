@@ -27,6 +27,7 @@ type Vendor = {
   price_range_max: string | null;
   status: VendorStatus;
   notes: string | null;
+  inclusions: string[];
 };
 
 const STATUS_OPTIONS: { value: VendorStatus; label: string }[] = [
@@ -46,6 +47,7 @@ const STATUS_VARIANT: Record<VendorStatus, "default" | "success" | "secondary" |
 const EMPTY_FORM = {
   name: "", categories: ["venue"] as VendorCategory[], contact: "",
   price_min: "", price_max: "", status: "interested" as VendorStatus, notes: "",
+  inclusions: [] as string[],
 };
 
 export default function VendorsPage() {
@@ -58,6 +60,7 @@ export default function VendorsPage() {
   const [editing, setEditing] = useState<Vendor | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [inclusionDraft, setInclusionDraft] = useState("");
 
   const supabase = createClient();
 
@@ -94,6 +97,7 @@ export default function VendorsPage() {
   function openAdd(defaultCategory?: VendorCategory) {
     setEditing(null);
     setForm({ ...EMPTY_FORM, categories: defaultCategory ? [defaultCategory] : ["venue"] });
+    setInclusionDraft("");
     setOpen(true);
   }
 
@@ -107,7 +111,9 @@ export default function VendorsPage() {
       price_max: v.price_range_max ?? "",
       status: v.status,
       notes: v.notes ?? "",
+      inclusions: v.inclusions ?? [],
     });
+    setInclusionDraft("");
     setOpen(true);
   }
 
@@ -123,6 +129,7 @@ export default function VendorsPage() {
       price_range_max: form.price_max ? Number(form.price_max) : null,
       status: form.status,
       notes: form.notes || null,
+      inclusions: form.inclusions,
     };
     if (editing) {
       await supabase.from("vendors").update(payload).eq("id", editing.id);
@@ -132,6 +139,20 @@ export default function VendorsPage() {
     setOpen(false);
     setSaving(false);
     load();
+  }
+
+  function addInclusion() {
+    const value = inclusionDraft.trim();
+    if (!value || form.inclusions.includes(value)) {
+      setInclusionDraft("");
+      return;
+    }
+    setForm((f) => ({ ...f, inclusions: [...f.inclusions, value] }));
+    setInclusionDraft("");
+  }
+
+  function removeInclusion(value: string) {
+    setForm((f) => ({ ...f, inclusions: f.inclusions.filter((i) => i !== value) }));
   }
 
   async function remove() {
@@ -342,10 +363,50 @@ export default function VendorsPage() {
             <div className="space-y-1.5">
               <Label>Notes (optional)</Label>
               <Input
-                placeholder="e.g. Includes tables and chairs, free parking"
+                placeholder="e.g. Garden view, no overtime fee"
                 value={form.notes}
                 onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
               />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Inclusions (optional)</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="e.g. Free parking"
+                  value={inclusionDraft}
+                  onChange={(e) => setInclusionDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addInclusion();
+                    }
+                  }}
+                />
+                <Button type="button" variant="outline" onClick={addInclusion}>
+                  Add
+                </Button>
+              </div>
+              {form.inclusions.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {form.inclusions.map((tag) => (
+                    <span
+                      key={tag}
+                      className="flex items-center gap-1 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-fg"
+                    >
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => removeInclusion(tag)}
+                        aria-label={`Remove ${tag}`}
+                        className="text-muted-fg hover:text-foreground"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             <Button className="w-full" disabled={!form.name.trim() || form.categories.length === 0 || saving} onClick={save}>
