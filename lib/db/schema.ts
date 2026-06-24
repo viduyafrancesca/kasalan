@@ -17,7 +17,7 @@ export const vendorStatusEnum = pgEnum("vendor_status", [
 ]);
 
 export const vendorCategoryEnum = pgEnum("vendor_category", [
-  "venue", "catering", "photography", "videography", "flowers",
+  "venue", "event_coordinator", "emcee", "catering", "photography", "videography", "flowers",
   "hair_makeup", "styling", "attire", "sounds_lights", "cake",
   "invitations", "transportation", "other",
 ]);
