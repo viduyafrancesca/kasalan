@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { BottomNav } from "@/components/shared/BottomNav";
-import { Heart, MapPin, Share2, Settings } from "lucide-react";
+import { Heart, MapPin, Share2, Settings, GitCompare } from "lucide-react";
 
 const SECTIONS = [
   { href: "/more/entourage", label: "Entourage",      desc: "Ninong, ninang & secondary sponsors",       Icon: Heart },
   { href: "/more/vendors",   label: "Vendor Shortlist", desc: "Venues, caterers, photographers & more",  Icon: MapPin },
+  { href: "/more/compare",   label: "Compare Packages", desc: "Side-by-side vendor comparison by category", Icon: GitCompare },
   { href: "/more/share",     label: "Share",          desc: "Invite partner or share with family",       Icon: Share2 },
   { href: "/more/settings",  label: "Settings",       desc: "Wedding details, ceremony preferences & account", Icon: Settings },
 ];
