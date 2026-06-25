@@ -64,11 +64,13 @@ export default function SupplierLineupComparePage() {
   const vendorMap = useMemo(() => new Map(vendors.map((v) => [v.id, v])), [vendors]);
 
   const pickMap = useMemo(() => {
-    const map = new Map<string, Map<string, string>>();
+    const map = new Map<string, Map<string, string[]>>();
     for (const p of picks) {
-      const inner = map.get(p.lineup_id) ?? new Map<string, string>();
+      const inner = map.get(p.lineup_id) ?? new Map<string, string[]>();
       map.set(p.lineup_id, inner);
-      inner.set(p.category, p.vendor_id);
+      const ids = inner.get(p.category) ?? [];
+      ids.push(p.vendor_id);
+      inner.set(p.category, ids);
     }
     return map;
   }, [picks]);
@@ -78,22 +80,23 @@ export default function SupplierLineupComparePage() {
     if (!categoryMap) return "—";
     let min = 0, max = 0, hasPrice = false;
     const seen = new Set<string>();
-    for (const vendorId of categoryMap.values()) {
-      if (seen.has(vendorId)) continue;
-      seen.add(vendorId);
-      const v = vendorMap.get(vendorId);
-      if (!v) continue;
-      if (v.price_range_min) { min += Number(v.price_range_min); hasPrice = true; }
-      if (v.price_range_max) { max += Number(v.price_range_max); hasPrice = true; }
+    for (const vendorIds of categoryMap.values()) {
+      for (const vendorId of vendorIds) {
+        if (seen.has(vendorId)) continue;
+        seen.add(vendorId);
+        const v = vendorMap.get(vendorId);
+        if (!v) continue;
+        if (v.price_range_min) { min += Number(v.price_range_min); hasPrice = true; }
+        if (v.price_range_max) { max += Number(v.price_range_max); hasPrice = true; }
+      }
     }
     return hasPrice ? `${formatPHP(min)} – ${formatPHP(max)}` : "—";
   }
 
   function cellLabel(lineupId: string, cat: VendorCategory) {
-    const vendorId = pickMap.get(lineupId)?.get(cat);
-    if (!vendorId) return "—";
-    const v = vendorMap.get(vendorId);
-    return v ? v.name : "—";
+    const vendorIds = pickMap.get(lineupId)?.get(cat) ?? [];
+    const names = vendorIds.map((id) => vendorMap.get(id)?.name).filter((name): name is string => Boolean(name));
+    return names.length > 0 ? names.join(", ") : "—";
   }
 
   return (
