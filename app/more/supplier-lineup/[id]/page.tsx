@@ -96,44 +96,68 @@ export default function SupplierLineupBuilderPage() {
   const picksByCategory = useMemo(() => {
     const map = new Map<string, { pickId: string; vendor: Vendor }>();
     for (const p of picks) {
+      if (p.category === "other") continue;
       const vendor = vendorMap.get(p.vendor_id);
       if (vendor) map.set(p.category, { pickId: p.id, vendor });
     }
     return map;
   }, [picks, vendorMap]);
 
+  const otherPicks = useMemo(() => {
+    const result: { pickId: string; vendor: Vendor }[] = [];
+    for (const p of picks) {
+      if (p.category !== "other") continue;
+      const vendor = vendorMap.get(p.vendor_id);
+      if (vendor) result.push({ pickId: p.id, vendor });
+    }
+    return result;
+  }, [picks, vendorMap]);
+
   const eligibleByCategory = useMemo(() => {
     const map = new Map<VendorCategory, Vendor[]>();
+    const otherPickedIds = new Set(otherPicks.map((p) => p.vendor.id));
     for (const cat of activeCategories) {
-      map.set(cat, vendors.filter((v) => v.categories.includes(cat) && v.status !== "declined"));
+      const base = vendors.filter((v) => v.categories.includes(cat) && v.status !== "declined");
+      map.set(cat, cat === "other" ? base.filter((v) => !otherPickedIds.has(v.id)) : base);
     }
     return map;
-  }, [activeCategories, vendors]);
+  }, [activeCategories, vendors, otherPicks]);
 
   const { totalMin, totalMax, hasPrice } = useMemo(() => {
     let min = 0, max = 0, has = false;
     const countedVendorIds = new Set<string>();
-    for (const cat of activeCategories) {
-      const pick = picksByCategory.get(cat);
-      if (!pick || countedVendorIds.has(pick.vendor.id)) continue;
-      countedVendorIds.add(pick.vendor.id);
-      if (pick.vendor.price_range_min) { min += Number(pick.vendor.price_range_min); has = true; }
-      if (pick.vendor.price_range_max) { max += Number(pick.vendor.price_range_max); has = true; }
+    function addVendor(vendor: Vendor) {
+      if (countedVendorIds.has(vendor.id)) return;
+      countedVendorIds.add(vendor.id);
+      if (vendor.price_range_min) { min += Number(vendor.price_range_min); has = true; }
+      if (vendor.price_range_max) { max += Number(vendor.price_range_max); has = true; }
     }
+    for (const cat of activeCategories) {
+      if (cat === "other") continue;
+      const pick = picksByCategory.get(cat);
+      if (pick) addVendor(pick.vendor);
+    }
+    for (const p of otherPicks) addVendor(p.vendor);
     return { totalMin: min, totalMax: max, hasPrice: has };
-  }, [activeCategories, picksByCategory]);
+  }, [activeCategories, picksByCategory, otherPicks]);
 
   const uniqueInclusionVendors = useMemo(() => {
     const seen = new Set<string>();
     const result: Vendor[] = [];
     for (const cat of activeCategories) {
+      if (cat === "other") continue;
       const pick = picksByCategory.get(cat);
       if (!pick || seen.has(pick.vendor.id)) continue;
       seen.add(pick.vendor.id);
       if (pick.vendor.inclusions.length > 0) result.push(pick.vendor);
     }
+    for (const p of otherPicks) {
+      if (seen.has(p.vendor.id)) continue;
+      seen.add(p.vendor.id);
+      if (p.vendor.inclusions.length > 0) result.push(p.vendor);
+    }
     return result;
-  }, [activeCategories, picksByCategory]);
+  }, [activeCategories, picksByCategory, otherPicks]);
 
   function priceLabel(v: Vendor) {
     if (!v.price_range_min && !v.price_range_max) return "—";
@@ -176,6 +200,24 @@ export default function SupplierLineupBuilderPage() {
     setPicks((prev) => prev.filter((p) => p.category !== category));
   }
 
+  async function addOtherVendor(vendor: Vendor) {
+    if (!lineup) return;
+    const { data } = await supabase
+      .from("supplier_lineup_picks")
+      .insert({ lineup_id: lineup.id, category: "other", vendor_id: vendor.id })
+      .select()
+      .single();
+    if (data) {
+      setPicks((prev) => [...prev, data as PickRow]);
+    }
+    setPickerCategory(null);
+  }
+
+  async function removeOtherPick(pickId: string) {
+    await supabase.from("supplier_lineup_picks").delete().eq("id", pickId);
+    setPicks((prev) => prev.filter((p) => p.id !== pickId));
+  }
+
   if (notFound) {
     return (
       <div className="flex flex-col min-h-screen max-w-2xl mx-auto w-full items-center justify-center px-4">
@@ -185,7 +227,7 @@ export default function SupplierLineupBuilderPage() {
     );
   }
 
-  const pickedCategories = activeCategories.filter((cat) => picksByCategory.has(cat));
+  const pickedCategories = activeCategories.filter((cat) => cat !== "other" && picksByCategory.has(cat));
 
   return (
     <div className="flex flex-col min-h-screen max-w-2xl mx-auto w-full">
@@ -216,6 +258,45 @@ export default function SupplierLineupBuilderPage() {
 
               <div className="bg-card rounded-xl border border-border overflow-hidden">
                 {activeCategories.map((cat) => {
+                  if (cat === "other") {
+                    const eligible = eligibleByCategory.get(cat) ?? [];
+                    return (
+                      <div key={cat} className="px-4 py-3 border-b border-border last:border-0">
+                        <h3 className="text-xs uppercase tracking-widest text-accent font-semibold mb-1">{CATEGORY_LABELS[cat]}</h3>
+                        {otherPicks.length > 0 && (
+                          <div className="space-y-2 mb-2">
+                            {otherPicks.map(({ pickId, vendor }) => (
+                              <div key={pickId} className="flex items-start justify-between gap-2">
+                                <div>
+                                  <p className="text-sm font-medium">{vendor.name}</p>
+                                  <p className="text-xs text-muted-fg">{priceLabel(vendor)}</p>
+                                  {vendor.contact && <p className="text-xs text-muted-fg">{vendor.contact}</p>}
+                                </div>
+                                <button
+                                  onClick={() => removeOtherPick(pickId)}
+                                  aria-label={`Remove ${vendor.name}`}
+                                  className="text-muted-fg hover:text-foreground flex-shrink-0"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {eligible.length > 0 ? (
+                          <button
+                            onClick={() => setPickerCategory(cat)}
+                            className="text-xs text-accent flex items-center gap-1 hover:underline"
+                          >
+                            <Plus className="w-3 h-3" /> {otherPicks.length > 0 ? "Add another vendor" : "Add vendor"}
+                          </button>
+                        ) : otherPicks.length === 0 ? (
+                          <p className="text-xs text-muted-fg">No vendors added in this category yet</p>
+                        ) : null}
+                      </div>
+                    );
+                  }
+
                   const pick = picksByCategory.get(cat);
                   const eligible = eligibleByCategory.get(cat) ?? [];
                   return (
@@ -296,20 +377,34 @@ export default function SupplierLineupBuilderPage() {
         <p className="text-sm mb-4">
           {hasPrice ? `Estimated total: ${formatPHP(totalMin)} – ${formatPHP(totalMax)}` : "No estimated total yet"}
         </p>
-        {pickedCategories.length === 0 ? (
+        {pickedCategories.length === 0 && otherPicks.length === 0 ? (
           <p className="text-sm">No vendors picked yet.</p>
         ) : (
-          pickedCategories.map((cat) => {
-            const pick = picksByCategory.get(cat)!;
-            return (
-              <div key={cat} className="mb-3">
-                <p className="text-xs uppercase tracking-widest font-semibold">{CATEGORY_LABELS[cat]}</p>
-                <p className="text-sm font-medium">{pick.vendor.name}</p>
-                <p className="text-xs">{priceLabel(pick.vendor)}</p>
-                {pick.vendor.contact && <p className="text-xs">{pick.vendor.contact}</p>}
+          <>
+            {pickedCategories.map((cat) => {
+              const pick = picksByCategory.get(cat)!;
+              return (
+                <div key={cat} className="mb-3">
+                  <p className="text-xs uppercase tracking-widest font-semibold">{CATEGORY_LABELS[cat]}</p>
+                  <p className="text-sm font-medium">{pick.vendor.name}</p>
+                  <p className="text-xs">{priceLabel(pick.vendor)}</p>
+                  {pick.vendor.contact && <p className="text-xs">{pick.vendor.contact}</p>}
+                </div>
+              );
+            })}
+            {otherPicks.length > 0 && (
+              <div className="mb-3">
+                <p className="text-xs uppercase tracking-widest font-semibold">{CATEGORY_LABELS.other}</p>
+                {otherPicks.map(({ pickId, vendor }) => (
+                  <div key={pickId} className="mb-1">
+                    <p className="text-sm font-medium">{vendor.name}</p>
+                    <p className="text-xs">{priceLabel(vendor)}</p>
+                    {vendor.contact && <p className="text-xs">{vendor.contact}</p>}
+                  </div>
+                ))}
               </div>
-            );
-          })
+            )}
+          </>
         )}
 
         {uniqueInclusionVendors.length > 0 && (
@@ -336,7 +431,7 @@ export default function SupplierLineupBuilderPage() {
               pickerCategory && (eligibleByCategory.get(pickerCategory) ?? []).map((vendor) => (
                 <button
                   key={vendor.id}
-                  onClick={() => pickVendor(pickerCategory, vendor)}
+                  onClick={() => (pickerCategory === "other" ? addOtherVendor(vendor) : pickVendor(pickerCategory, vendor))}
                   className="w-full flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2 text-left hover:bg-muted transition-colors"
                 >
                   <div className="min-w-0">
